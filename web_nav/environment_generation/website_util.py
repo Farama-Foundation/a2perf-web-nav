@@ -59,18 +59,18 @@ PRIMITIVE_TO_INTERACTABLE_ELEMENTS = {'addressline1': 1,
 
 
 class Primitive(object):
-    def __init__(self, name, primitive_id, is_active=False):
+    def __init__(self, name, primitive_id, num_interactable_elements, is_active=False):
         self.name = name
         self.primitive_id = primitive_id
         self.is_active = is_active
         self.bonus_difficulty = None  # TODO: Add bonus difficulty for active primitives that need text input
-        self.num_interactable_elements = PRIMITIVE_TO_INTERACTABLE_ELEMENTS[name]
+        self.num_interactable_elements = num_interactable_elements
 
-    # def __str__(self):
-    #     return f'{self.name}:{self.primitive_id}. Active: {self.is_active}'
-    #
-    # def __repr__(self):
-    #     return self.__str__()
+    def __str__(self):
+        return f'{self.name}:{self.primitive_id}. Active: {self.is_active}'
+
+    def __repr__(self):
+        return self.__str__()
 
 
 class Website(object):
@@ -117,13 +117,13 @@ class Page(object):
         self.primitives = []
         self.difficulty = None
 
-    # def __str__(self):
-    #     return f'Page {self.page_id}. Difficulty: {self.update_difficulty()}. Active primitives: ' \
-    #            f'{self.num_active_primitives}. Passive primitives: {self.num_passive_primitives} Next page: ' \
-    #            f'{self.next_page.page_id if self.next_page is not None else None}'
+    def __str__(self):
+        return f'Page {self.page_id}. Difficulty: {self.update_difficulty()}. Active primitives: ' \
+               f'{self.num_active_primitives}. Passive primitives: {self.num_passive_primitives} Next page: ' \
+               f'{self.next_page.page_id if self.next_page is not None else None}'
 
-    # def __repr__(self):
-    #     return self.__str__()
+    def __repr__(self):
+        return self.__str__()
 
     def add_primitive(self, primitive):
         """Adds a primitive to the page."""
@@ -145,10 +145,12 @@ class Page(object):
         The difficulty of a page is defined by the probability of a random agent interacting with the correct
         primitives.
         """
-        possible_correct_interactions = self.num_possible_correct_interactions if \
-            self.num_possible_correct_interactions > 0 else 1
-        probability_correct = possible_correct_interactions / self.num_interactable_elements
-        self.difficulty = -np.log(probability_correct)
+        if self.num_interactable_elements > 0:
+            possible_correct_interactions = self.num_possible_correct_interactions if \
+                self.num_possible_correct_interactions > 0 else 1
+            probability_correct = possible_correct_interactions / self.num_interactable_elements
+            self.difficulty = -np.log(probability_correct)
+
         return self.difficulty
 
     def set_next_page(self, next_page):

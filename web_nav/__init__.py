@@ -1,5 +1,4 @@
 import gym
-from CoDE import vocabulary_node
 
 gym.envs.register(
         id='WebNavigation-v0',
