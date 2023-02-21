@@ -76,6 +76,7 @@ RUN pip install gwob/miniwob-plusplus/python/
 
 # Install gMiniWob
 RUN pip install gwob/
+RUN pip install psutil
 RUN pip install --force-reinstall numpy==1.23.5
 
 # Create user (need a non-root user for running google-chrome without --no-sandbox)
