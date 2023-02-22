@@ -161,7 +161,8 @@ class Page(object):
 def generate_primitive(primitive_name, primitive_id):
     """Generates a primitive."""
     is_active = primitive_name in ACTIVE_PRIMITIVES
-    return Primitive(name=primitive_name, primitive_id=primitive_id, is_active=is_active)
+    return Primitive(name=primitive_name, primitive_id=primitive_id, is_active=is_active,
+                     num_interactable_elements=PRIMITIVE_TO_INTERACTABLE_ELEMENTS[primitive_name])
 
 
 if __name__ == '__main__':
