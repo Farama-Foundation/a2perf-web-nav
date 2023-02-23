@@ -1,6 +1,7 @@
 import random
-
+import os
 import gin
+import numpy as np
 from CoDE import web_environment
 from CoDE import vocabulary_node
 
@@ -13,6 +14,7 @@ class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
             self,
             seed,
             difficulty,
+            data_dir,
             global_vocabulary=vocabulary_node.LockedVocabulary(),
             **kwargs
             ):
@@ -23,13 +25,9 @@ class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
         if seed is None:
             self.seed = 0
         self.rng = random.Random(self.seed)
-
+        self.data_dir = data_dir
         self.difficulty = difficulty
-        if self.difficulty not in ['easy', 'medium', 'hard']:
-            raise ValueError('difficulty must be easy, medium, or hard')
-
         self._designs = self._load_designs(self.difficulty)
-        self.design_environment(env_design=self._sample_design())
 
     def reset(self, raw_state=False):
         """Reset the environment."""
@@ -42,10 +40,10 @@ class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
 
     def _load_designs(self, difficulty):
         """Load the designs for the corresponding difficulty level."""
-        return [{'number_of_pages': 5,
-                 'action': [1, 2, 3, 4, 5],
-                 'action_page': [0, 1, 2, 3, 4]}
-                ]
+        design_path = os.path.join(self.data_dir, f'design_{difficulty}.npy')
+        if not os.path.isfile(design_path):
+            raise ValueError(f'No design file found for difficulty {difficulty}')
+        return np.load(design_path, allow_pickle=True)
 
     def _sample_design(self):
         """Sample a design from the design space."""

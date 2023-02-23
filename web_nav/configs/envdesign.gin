@@ -1,4 +1,4 @@
-from web_nav import environment
+from rl_perf.domains.web_nav.web_nav import environment
 
 environment.WebNavigationEnv.subdomain="gminiwob.generic_website"
 environment.WebNavigationEnv.profile_length=10
@@ -14,3 +14,4 @@ environment.WebNavigationEnv.kwargs_dict={"headless": False,"threading": False}
 environment.WebNavigationEnv.verbose=True
 environment.WebNavigationEnv.step_limit=25
 environment.WebNavigationEnv.use_potential_based_reward=True
+environment.WebNavigationEnv.data_dir='/tmp/pycharm_project_101/rl_perf/domains/web_nav/web_nav/environment_generation/data'
