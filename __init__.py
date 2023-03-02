@@ -1,7 +1,7 @@
 import gin
 import gym
 
-gin.parse_config_files_and_bindings(["../domains/web_nav/web_nav/configs/envdesign.gin"], None)
+gin.parse_config_files_and_bindings(["../domains/web_nav/web_nav/configs/envdesign.gin"], None, finalize_config=False)
 
 gym.envs.register(
         id='WebNavigation-v0',

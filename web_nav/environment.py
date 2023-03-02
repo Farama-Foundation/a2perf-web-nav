@@ -2,8 +2,8 @@ import random
 import os
 import gin
 import numpy as np
-from CoDE import web_environment
-from CoDE import vocabulary_node
+from rl_perf.domains.web_nav.CoDE import web_environment
+from rl_perf.domains.web_nav.CoDE import vocabulary_node
 
 
 @gin.configurable('WebNavigationEnv')
@@ -19,12 +19,9 @@ class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
             **kwargs
             ):
         kwargs['global_vocabulary'] = global_vocabulary
+        # kwargs['kwargs_dict'] = {'seed': seed}
         super().__init__(**kwargs)
 
-        self.seed = seed
-        if seed is None:
-            self.seed = 0
-        self.rng = random.Random(self.seed)
         self.data_dir = data_dir
         self.difficulty = difficulty
         self._designs = self._load_designs(self.difficulty)
@@ -47,4 +44,4 @@ class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
 
     def _sample_design(self):
         """Sample a design from the design space."""
-        return self.rng.choice(self._designs)
+        return self._random.choice(self._designs)

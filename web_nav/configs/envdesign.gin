@@ -14,4 +14,4 @@ environment.WebNavigationEnv.kwargs_dict={"headless": False,"threading": False}
 environment.WebNavigationEnv.verbose=True
 environment.WebNavigationEnv.step_limit=25
 environment.WebNavigationEnv.use_potential_based_reward=True
-environment.WebNavigationEnv.data_dir='/tmp/pycharm_project_101/rl_perf/domains/web_nav/web_nav/environment_generation/data'
+environment.WebNavigationEnv.data_dir='/tmp/pycharm_project_929/rl_perf/domains/web_nav/web_nav/environment_generation/data'

@@ -1,10 +1,9 @@
-import numpy as np
-from CoDE import web_environment
-from absl import app
-from CoDE import web_primitives
-
 import gin
-from CoDE import vocabulary_node
+from absl import app
+
+from rl_perf.domains.web_nav.CoDE import vocabulary_node
+from rl_perf.domains.web_nav.CoDE import web_environment
+from rl_perf.domains.web_nav.CoDE import web_primitives
 
 
 def main(_):

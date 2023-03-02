@@ -2,9 +2,9 @@ import collections
 
 import gin
 import numpy as np
-from CoDE import vocabulary_node
-from CoDE import web_environment
-from CoDE import web_primitives
+from rl_perf.domains.web_nav.CoDE import vocabulary_node
+from rl_perf.domains.web_nav.CoDE import web_environment
+from rl_perf.domains.web_nav.CoDE import web_primitives
 
 PASSIVE_PRIMITIVES = ['carousel', 'cart', 'dealmedia', 'deck', 'footer1', 'forgotpassowrd', 'forgotusername', 'header',
                       'header_login', 'header_select_items', 'inpgroup1', 'navbar', 'next_checkout',

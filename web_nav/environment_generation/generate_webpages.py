@@ -4,7 +4,7 @@ import copy
 import logging
 
 import numpy as np
-from CoDE import web_primitives
+from rl_perf.domains.web_nav.CoDE import web_primitives
 from absl import app
 from absl import flags
 
