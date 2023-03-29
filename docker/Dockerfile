@@ -4,31 +4,18 @@ FROM $BASE_IMAGE
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install dependencies
 RUN apt-get update && apt-get install -y wget \
-    build-essential \
-    checkinstall \
-    zlib1g \
-    xvfb \
     sudo \
-    unzip \
-    libssl-dev \
-    subversion \
-    x11-apps \
-    htop \
-    curl \
-    vim \
-    git \
-    tmux \
-    libffi-dev \
-    mesa-utils \
-    libcanberra-gtk-module \
-    libcanberra-gtk3-module \
-    openssh-server \
-    ssh \
-    dbus \
+    build-essential \
+    checkinstall\
+    zlib1g \
     zlib1g-dev \
-    notification-daemon
+    libssl-dev\
+    libffi-dev\
+    libbz2-dev
+
+
+# Install dependencies
 
 RUN wget https://www.python.org/ftp/python/3.10.8/Python-3.10.8.tgz
 RUN tar -xvf Python-3.10.8.tgz
@@ -38,9 +25,32 @@ RUN make
 RUN make install
 WORKDIR /
 
+
 # Symlink pip3 to pip
 RUN ln -s /usr/local/bin/pip3 /usr/local/bin/pip
 RUN pip3 install --upgrade pip
+
+
+RUN apt-get update && apt-get install -y \
+    xvfb \
+    unzip \
+    subversion \
+    x11-apps \
+    htop \
+    curl \
+    vim \
+    git \
+    tmux \
+    mesa-utils \
+    libcanberra-gtk-module \
+    libcanberra-gtk3-module \
+    openssh-server \
+    ssh \
+    dbus \
+    notification-daemon
+
+
+
 
 # Install google chrome and chromedriver
 ARG CHROME_VERSION="109.0.5414.74-1"
@@ -75,9 +85,10 @@ RUN python3 integrate_miniwob.py
 RUN pip install gwob/miniwob-plusplus/python/
 
 # Install gMiniWob
-RUN pip install gwob/
+#RUN #pip install gwob/
 RUN pip install psutil
 RUN pip install --force-reinstall numpy==1.23.5
+RUN pip install pandas
 
 # Create user (need a non-root user for running google-chrome without --no-sandbox)
 RUN useradd -ms /bin/bash user

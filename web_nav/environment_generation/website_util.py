@@ -58,6 +58,11 @@ PRIMITIVE_TO_INTERACTABLE_ELEMENTS = {'addressline1': 1,
                                       }
 
 
+def concept_id_from_concept_name(concept_name):
+    """Returns the concept id for a given concept name."""
+    return web_primitives.CONCEPTS.index(concept_name)
+
+
 class Primitive(object):
     def __init__(self, name, primitive_id, num_interactable_elements, is_active=False):
         self.name = name

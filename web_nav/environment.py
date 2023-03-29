@@ -32,7 +32,7 @@ class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
         return super().reset(raw_state=raw_state)
 
     def _design_environment(self, env_design):
-        """Design the environment based on the environment design."""
+        """Design the environment based` on the environment design."""
         self.design_environment(env_design=env_design, auto_num_pages=True)
 
     def _load_designs(self, difficulty):

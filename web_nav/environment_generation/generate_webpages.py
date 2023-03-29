@@ -1,14 +1,14 @@
-import os
 import collections
 import copy
 import logging
+import os
 
 import numpy as np
-from rl_perf.domains.web_nav.CoDE import web_primitives
 from absl import app
 from absl import flags
 
 import website_util
+from rl_perf.domains.web_nav.CoDE import web_primitives
 
 flags.DEFINE_integer('num_difficulty_levels', 6, 'Number of difficulty levels to generate.')
 flags.DEFINE_multi_string('difficulty_names', ['1', '2', '3', '4', '5', '6'], 'Names of difficulty levels.')

@@ -1,7 +1,10 @@
+import os
+
 import gin
 import gym
 
-gin.parse_config_files_and_bindings(["../domains/web_nav/web_nav/configs/envdesign.gin"], None, finalize_config=False)
+config_file_path = os.path.join(os.path.dirname(__file__), 'web_nav', 'configs', 'envdesign.gin')
+gin.parse_config_files_and_bindings([config_file_path], None, finalize_config=False)
 
 gym.envs.register(
         id='WebNavigation-v0',
