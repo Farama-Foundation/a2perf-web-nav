@@ -19,7 +19,7 @@ class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
             **kwargs
             ):
         kwargs['global_vocabulary'] = global_vocabulary
-        # kwargs['kwargs_dict'] = {'seed': seed}
+        kwargs['seed'] = seed
         super().__init__(**kwargs)
 
         self.data_dir = data_dir

@@ -86,7 +86,8 @@ class WebEnvironment(gym.Env):
             generate_screenshots=False,
             global_vocabulary=None,
             # Kwargs for WoB Env.
-            kwargs_dict=None):
+            kwargs_dict=None,
+            seed=None, ):
         """Initialize a web environment.
 
         Implement:
@@ -162,11 +163,12 @@ class WebEnvironment(gym.Env):
         logging.info('kwargs passes to wob environment : %s', str(kwargs_dict))
         # create wob environment
         self.subdomain = subdomain
-        self._wob_env = utils.create_environment(subdomain, base_url, kwargs_dict)
         self._step_limit = step_limit
         self._mode = mode
         self._verbose = verbose
-        self.seed()
+        self.seed(seed=seed)
+        self._wob_env = utils.create_environment(subdomain, base_url, random_state=self._random,
+                                                 kwargs_dict=kwargs_dict)
         # 5 main attributes: tag, value, text, placeholder, class, [name]
         self.number_of_dom_attributes = 5
         # The global vocabulary is wrapped with a client.Client class. Creating the

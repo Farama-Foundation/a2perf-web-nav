@@ -11,6 +11,7 @@ environment.WebNavigationEnv.exact_wob_reward=False
 environment.WebNavigationEnv.timestep_penalty=0.05
 environment.WebNavigationEnv.cyclic_action_penalty=0.5
 environment.WebNavigationEnv.kwargs_dict={"headless": True,"threading": False}
+environment.WebNavigationEnv.base_url='file:///web_nav/gwob/'
 environment.WebNavigationEnv.verbose=True
 environment.WebNavigationEnv.step_limit=25
 environment.WebNavigationEnv.use_potential_based_reward=True
