@@ -1,9 +1,12 @@
-import random
 import os
+
 import gin
 import numpy as np
-from rl_perf.domains.web_nav.CoDE import web_environment
+import selenium
+from absl import logging
+
 from rl_perf.domains.web_nav.CoDE import vocabulary_node
+from rl_perf.domains.web_nav.CoDE import web_environment, utils
 
 
 @gin.configurable('WebNavigationEnv')
@@ -18,12 +21,10 @@ class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
             global_vocabulary=vocabulary_node.LockedVocabulary(),
             **kwargs
             ):
-        kwargs['global_vocabulary'] = global_vocabulary
-        kwargs['seed'] = seed
-        super().__init__(**kwargs)
-
+        super().__init__(seed=seed, global_vocabulary=global_vocabulary, **kwargs)
         self.data_dir = data_dir
         self.difficulty = difficulty
+        self.browser_kwargs = kwargs['kwargs_dict']
         self._designs = self._load_designs(self.difficulty)
 
     def reset(self, raw_state=False):

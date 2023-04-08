@@ -78,6 +78,7 @@ class GMiniWoBWebEnvironment(base_web_environment.WebEnvironment):
       mode='train',
       verbose=False,
       verbose_prob=0.1,
+      seed=None,
       # Gminiwob parameters.
       gminiwob_required_complexity='original',
       gminiwob_unrequired_complexity='original',
@@ -127,6 +128,7 @@ class GMiniWoBWebEnvironment(base_web_environment.WebEnvironment):
         use_potential_based_reward=use_potential_based_reward,
         generate_screenshots=generate_screenshots,
         global_vocabulary=global_vocabulary,
+        seed=seed,
         kwargs_dict=kwargs_dict)
     self._use_conceptual = use_conceptual
     # Set to true to use predefined transitions.

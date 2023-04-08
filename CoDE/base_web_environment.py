@@ -167,6 +167,7 @@ class WebEnvironment(gym.Env):
         self._mode = mode
         self._verbose = verbose
         self.seed(seed=seed)
+        self.base_url = base_url
         self._wob_env = utils.create_environment(subdomain, base_url, random_state=self._random,
                                                  kwargs_dict=kwargs_dict)
         # 5 main attributes: tag, value, text, placeholder, class, [name]
