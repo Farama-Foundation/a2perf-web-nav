@@ -4,10 +4,9 @@ import gin
 import numpy as np
 import selenium
 from absl import logging
-from miniwob import reward
 
 from rl_perf.domains.web_nav.CoDE import vocabulary_node
-from rl_perf.domains.web_nav.CoDE import web_environment, utils
+from rl_perf.domains.web_nav.CoDE import web_environment
 
 
 @gin.configurable('WebNavigationEnv')
@@ -56,13 +55,17 @@ class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
             return self._prev_obs, rew, done, info
         return obs, rew, done, info
 
-    def reset(self, raw_state=False, design=None):
+    def reset(self, raw_state=False):
         """Reset the environment."""
         try:
             self._design_environment(env_design=self._sample_design())
             data = super().reset(raw_state=raw_state)
         except selenium.common.exceptions.WebDriverException as e:
             logging.info('Chrome crashed, restarting browser and resetting environment.')
+            self.restart_browser()
+            data = self.reset()
+        except selenium.common.exceptions.TimeoutException as e:
+            logging.info('Timeout, restarting browser and resetting environment.')
             self.restart_browser()
             data = self.reset()
         return data
