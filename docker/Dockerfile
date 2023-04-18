@@ -85,7 +85,6 @@ RUN python3 integrate_miniwob.py
 RUN pip install gwob/miniwob-plusplus/python/
 
 # Install gMiniWob
-#RUN #pip install gwob/
 RUN pip install psutil
 RUN pip install --force-reinstall numpy==1.23.5
 RUN pip install pandas

@@ -1,5 +1,6 @@
 from rl_perf.domains.web_nav.web_nav import environment
 
+environment.WebNavigationEnv.difficulty=1
 environment.WebNavigationEnv.subdomain="gminiwob.generic_website"
 environment.WebNavigationEnv.profile_length=10
 environment.WebNavigationEnv.number_of_fields=25
@@ -15,5 +16,4 @@ environment.WebNavigationEnv.base_url='file:///web_nav/gwob/'
 environment.WebNavigationEnv.verbose=True
 environment.WebNavigationEnv.step_limit=25
 environment.WebNavigationEnv.use_potential_based_reward=True
-environment.WebNavigationEnv.data_dir='/tmp/pycharm_project_494/rl_perf/domains/web_nav/web_nav/environment_generation/data'
-#TODO set the data dir using os path file
+
