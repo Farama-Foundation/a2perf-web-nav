@@ -5,6 +5,7 @@ import numpy as np
 import selenium
 from absl import logging
 
+from rl_perf.domains.web_nav.CoDE import utils
 from rl_perf.domains.web_nav.CoDE import vocabulary_node
 from rl_perf.domains.web_nav.CoDE import web_environment
 
@@ -31,16 +32,14 @@ class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
 
     def restart_browser(self):
         """Restart the browser and reset the environment."""
-        # Call close on the base miniwob environment
+        # Clean up the old environment
         self.close()
 
-        # Restart the underlying browser
-        del self._wob_env.instances[0].driver
-        self._wob_env.instances[0].create_driver()
+        del self._wob_env
 
-        states = [None] * len(self._wob_env.instances)
-        seeds = [self._random.randint(0, 1000) for _ in self._wob_env.instances]
-        self._wob_env.instances[0].reset(seed=seeds, states=states)
+        # Create a new environment
+        self._wob_env = utils.create_environment(self.subdomain, self.base_url, random_state=self._random,
+                                                 kwargs_dict=self.browser_kwargs)
 
     def step(self, action, raw_state=False):
         try:
