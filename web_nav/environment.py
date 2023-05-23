@@ -19,15 +19,21 @@ class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
             seed,
             difficulty,
             data_dir,
+            designs=None,
             global_vocabulary=vocabulary_node.LockedVocabulary(),
             **kwargs
-            ):
+    ):
         super().__init__(seed=seed, global_vocabulary=global_vocabulary, **kwargs)
         self.data_dir = data_dir
         self.difficulty = difficulty
         self.browser_kwargs = kwargs['kwargs_dict']
-        self._designs = self._load_designs(self.difficulty)
-        self.current_design = None
+
+        if designs is None:
+            self._designs = self._load_designs(self.difficulty)
+        else:
+            self._designs = designs
+
+        self._current_design = None
         self._prev_obs = None
 
     def restart_browser(self):

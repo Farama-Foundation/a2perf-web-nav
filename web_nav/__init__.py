@@ -11,10 +11,6 @@ data_dir = os.path.join(os.path.dirname(__file__), 'environment_generation', 'da
 gin.parse_config_files_and_bindings([config_file_path], None, finalize_config=False)
 gin.parse_config(f'environment.WebNavigationEnv.data_dir = "{data_dir}"')
 gym.envs.register(
-        id='WebNavigation-v0',
-        entry_point='rl_perf.domains.web_nav.web_nav.environment:WebNavigationEnv',
-        kwargs={
-                'difficulty': 'easy',
-                'seed': 0,
-                }
-        )
+    id='WebNavigation-v0',
+    entry_point='rl_perf.domains.web_nav.web_nav.environment:WebNavigationEnv',
+)
