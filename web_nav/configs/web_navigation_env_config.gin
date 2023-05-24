@@ -2,7 +2,6 @@ from rl_perf.domains.web_nav.web_nav import environment
 
 environment.WebNavigationEnv.difficulty=1
 environment.WebNavigationEnv.seed=0
-environment.WebNavigationEnv.designs=[{'number_of_pages': 1, 'action': [],'action_page': [],}]
 environment.WebNavigationEnv.subdomain="gminiwob.generic_website"
 environment.WebNavigationEnv.profile_length=10
 environment.WebNavigationEnv.number_of_fields=25
