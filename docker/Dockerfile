@@ -1,10 +1,12 @@
-ARG WEB_NAV_DIR="../"
-ARG BASE_IMAGE="nvidia/cuda:11.4.2-cudnn8-devel-ubuntu20.04"
+ARG BASE_IMAGE="nvidia/cuda:11.8.0-cudnn8-devel-ubuntu20.04"
 FROM $BASE_IMAGE
 
+ARG APT_COMMAND="apt-get -o Acquire::Retries=3 -y"
+ARG USER_ID
+ARG USER_GROUP_ID
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && apt-get install -y wget \
+RUN ${APT_COMMAND} update && ${APT_COMMAND} install -y wget \
     sudo \
     build-essential \
     checkinstall\
@@ -12,26 +14,43 @@ RUN apt-get update && apt-get install -y wget \
     zlib1g-dev \
     libssl-dev\
     libffi-dev\
-    libbz2-dev
-
+    libbz2-dev \
+    libsdl-image1.2-dev \
+    libsdl-mixer1.2-dev \
+    libsdl-ttf2.0-dev \
+    libsdl1.2-dev \
+    libsmpeg-dev \
+    subversion \
+    libportmidi-dev \
+    ffmpeg \
+    libswscale-dev \
+    libavformat-dev \
+    libavcodec-dev \
+    libfreetype6-dev \
+    libopenblas-dev
 
 # Install dependencies
+# add deadsnakes ppa then install python3.11
 
-RUN wget https://www.python.org/ftp/python/3.10.8/Python-3.10.8.tgz
-RUN tar -xvf Python-3.10.8.tgz
-WORKDIR Python-3.10.8
-RUN ./configure
-RUN make
-RUN make install
-WORKDIR /
-
-
-# Symlink pip3 to pip
-RUN ln -s /usr/local/bin/pip3 /usr/local/bin/pip
-RUN pip3 install --upgrade pip
+RUN ${APT_COMMAND} update && \
+    ${APT_COMMAND} install software-properties-common && \
+    add-apt-repository -y ppa:deadsnakes/ppa && \
+    ${APT_COMMAND} update && \
+    ${APT_COMMAND} install python3.8 python3.8-distutils python3.8-dev python3.8-venv && \
+    ${APT_COMMAND} clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    update-alternatives --install /usr/bin/python python /usr/bin/python3.8 1
 
 
-RUN apt-get update && apt-get install -y \
+# remove old python3 symlink and recreate it pointing to python3.8
+RUN rm /usr/bin/python3
+RUN ln -s /usr/bin/python3.8 /usr/bin/python3
+
+# Install python3 pip
+RUN wget https://bootstrap.pypa.io/get-pip.py
+RUN python3.8 get-pip.py
+
+RUN ${APT_COMMAND} update && ${APT_COMMAND} install -y \
     xvfb \
     unzip \
     subversion \
@@ -49,12 +68,8 @@ RUN apt-get update && apt-get install -y \
     dbus \
     notification-daemon
 
-
-
-
-# Install google chrome and chromedriver
-ARG CHROME_VERSION="109.0.5414.74-1"
-ARG CHROMEDRIVER_VERSION="109.0.5414.74"
+ARG CHROME_VERSION="114.0.5735.90-1"
+ARG CHROMEDRIVER_VERSION="114.0.5735.90"
 RUN wget --no-verbose -O /tmp/chrome.deb https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_${CHROME_VERSION}_amd64.deb \
   && apt install -y /tmp/chrome.deb \
   && rm /tmp/chrome.deb
@@ -64,51 +79,33 @@ RUN wget --no-verbose -O /tmp/chromedriver.zip https://chromedriver.storage.goog
   && chmod 755 /usr/bin/chromedriver
 ENV PATH=$PATH:/usr/bin/chromedriver
 
-RUN svn export https://github.com/google-research/google-research/trunk/compositional_rl && mv /compositional_rl /web_nav
-
-# Install bootstrap files
-RUN mkdir -p /web_nav/gwob/bootstrap && cd /web_nav/gwob/bootstrap && \
-  wget https://github.com/twbs/bootstrap/releases/download/v4.3.1/bootstrap-4.3.1-dist.zip && \
-  unzip bootstrap-4.3.1-dist.zip  && \
-  cp bootstrap-4.3.1-dist/css/bootstrap.min.css . && \
-  cp bootstrap-4.3.1-dist/js/bootstrap.min.js . && \
-  rm -r bootstrap-4.3.1-dist*
-
-# Install MiniWob
-WORKDIR /web_nav
-RUN git clone https://github.com/stanfordnlp/miniwob-plusplus gwob/miniwob-plusplus
-RUN cd gwob/miniwob-plusplus && git checkout 833a477a8fbfbd2497e95fee019f76df2b9bd75e
-RUN pip install 2to3
-RUN 2to3 gwob/miniwob-plusplus/python/miniwob -w
-
-RUN python3 integrate_miniwob.py
-RUN pip install gwob/miniwob-plusplus/python/
-
-# Install gMiniWob
-RUN pip install psutil
-RUN pip install --force-reinstall numpy==1.23.5
-RUN pip install pandas
-
-# Create user (need a non-root user for running google-chrome without --no-sandbox)
-RUN useradd -ms /bin/bash user
-RUN usermod -aG sudo user
-RUN passwd -d user
-
 # Enable X11 forwarding for docker
-RUN echo "X11UseLocalhost no" >> /etc/ssh/sshd_config
-RUN echo "X11DisplayOffset 10" >> /etc/ssh/sshd_config
+RUN echo "X11UseLocalhost no" >> /etc/ssh/sshd_config && \
+    echo "X11DisplayOffset 10" >> /etc/ssh/sshd_config && \
+    echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config
 
-USER user
+# Add User for safely using mpi4py
+RUN groupadd -g $USER_GROUP_ID user_group
+RUN groupadd -g 998 docker
+
+RUN useradd -u $USER_ID -g $USER_GROUP_ID -G 998 -ms /bin/bash user
+
+# Granting sudo privileges
+RUN usermod -aG sudo user
+RUN echo "user:password" | chpasswd
+RUN echo "user ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 RUN mkdir /home/user/.ssh
 RUN chmod 700 /home/user/.ssh
 RUN touch /home/user/.ssh/authorized_keys
 RUN chmod 600 /home/user/.ssh/authorized_keys
-ADD $WEB_NAV_DIR/.ssh/id_rsa.pub /home/user/.ssh/authorized_keys
+ADD .ssh/id_rsa.pub /home/user/.ssh/authorized_keys
 
-EXPOSE 22
 
-ENTRYPOINT export DBUS_SESSION_BUS_ADDRESS=`dbus-daemon --fork --config-file=/usr/share/dbus-1/session.conf --print-address` && \
-    sudo service dbus start && \
-    sudo service ssh start && \
-    exec bash
+RUN echo "Port 2020" >> /etc/ssh/sshd_config
+EXPOSE 2020
+
+
+USER user
+
+ENTRYPOINT sudo service ssh restart && bash

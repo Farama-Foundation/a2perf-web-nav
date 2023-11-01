@@ -31,19 +31,19 @@ unzip bootstrap-4.3.1-dist.zip && cp bootstrap-4.3.1-dist/css/bootstrap.min.css 
 * Clone the MiniWoB project:
 
 ```
-git clone https://github.com/stanfordnlp/miniwob-plusplus gwob/miniwob-plusplus
+git clone https://github.com/stanfordnlp/miniwob_plusplus gwob/miniwob_plusplus
 ```
 
 * Checkout the version that we used in our project:
 
 ```
-cd gwob/miniwob-plusplus && git checkout 833a477a8fbfbd2497e95fee019f76df2b9bd75e
+cd gwob/miniwob_plusplus && git checkout 833a477a8fbfbd2497e95fee019f76df2b9bd75e
 ```
 
 * Convert all python files from Python 2 to Python 3:
 
 ```
-pip install 2to3 && cd ../../ && 2to3 gwob/miniwob-plusplus/python/miniwob -w
+pip install 2to3 && cd ../../ && 2to3 gwob/miniwob_plusplus/python/miniwob -w
 ```
 
 * Integrate miniwob by making necessary changes:
@@ -55,7 +55,7 @@ python3 integrate_miniwob.py
 * Install miniwob:
 
 ```
-pip install gwob/miniwob-plusplus/python/
+pip install gwob/miniwob_plusplus/python/
 ```
 
 * Install the [ChromeDriver](https://chromedriver.chromium.org/downloads) with the version that is matching your Chrome browser:
@@ -89,12 +89,12 @@ using an LSTM-based DQN to generate logits and values.
 import gin
 import numpy as np
 
-from rl_perf.domains.web_nav.CoDE import test_websites
-from rl_perf.domains.web_nav.CoDE import utils
-from rl_perf.domains.web_nav.CoDE import vocabulary_node
-from rl_perf.domains.web_nav.CoDE import web_environment
-from rl_perf.domains.web_nav.CoDE import web_primitives
-from rl_perf.domains.web_nav.CoDE import q_networks
+from rl_perf.domains.web_nav.gwob.CoDE import test_websites
+from rl_perf.domains.web_nav.gwob.CoDE import utils
+from rl_perf.domains.web_nav.gwob.CoDE import vocabulary_node
+from rl_perf.domains.web_nav.gwob.CoDE import web_environment
+from rl_perf.domains.web_nav.gwob.CoDE import web_primitives
+from rl_perf.domains.web_nav.gwob.CoDE import q_networks
 
 gin.parse_config_files_and_bindings(["/path/to/compositional_rl/gwob/configs/envdesign.gin"], None)
 

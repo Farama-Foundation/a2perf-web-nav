@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2022 The Google Research Authors.
+# Copyright 2023 The Google Research Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 """Make necessary changes in MiniWoB classes to integrate gMiniWoB."""
 
 if __name__ == '__main__':
-  lines = open('gwob/miniwob-plusplus/python/miniwob/instance.py').readlines()
+  lines = open('gwob/miniwob_plusplus/python/miniwob/instance.py').readlines()
   lines = lines[0:84] + [
       """
         elif subdomain.startswith('gminiwob.') or subdomain.startswith('gwob.'):
@@ -27,10 +27,10 @@ if __name__ == '__main__':
           self.task_height = self.FLIGHT_TASK_HEIGHT\n"""
   ] + lines[84:]
 
-  with open('gwob/miniwob-plusplus/python/miniwob/instance.py', 'w') as fout:
+  with open('gwob/miniwob_plusplus/python/miniwob/instance.py', 'w') as fout:
     fout.writelines(lines)
 
-  lines = open('gwob/miniwob-plusplus/python/miniwob/fields.py').readlines()
+  lines = open('gwob/miniwob_plusplus/python/miniwob/fields.py').readlines()
   lines = lines[0:11] + [
       """
 def default_field_extractor(task_name):
@@ -52,10 +52,10 @@ def get_field_extractor(task_name):
                         """
   ] + lines[19:]
 
-  with open('gwob/miniwob-plusplus/python/miniwob/fields.py', 'w') as fout:
+  with open('gwob/miniwob_plusplus/python/miniwob/fields.py', 'w') as fout:
     fout.writelines(lines)
 
-  lines = open('gwob/miniwob-plusplus/python/miniwob/state.py').readlines()
+  lines = open('gwob/miniwob_plusplus/python/miniwob/state.py').readlines()
   lines = lines[0:144] + [
       "        self._placeholder = raw_dom.get('placeholder')\n"
   ] + lines[144:242] + [
@@ -69,10 +69,10 @@ def get_field_extractor(task_name):
                            'first.tampered != second.tampered)\n'
                        ] + lines[437:]
 
-  with open('gwob/miniwob-plusplus/python/miniwob/state.py', 'w') as fout:
+  with open('gwob/miniwob_plusplus/python/miniwob/state.py', 'w') as fout:
     fout.writelines(lines)
 
-  with open('gwob/miniwob-plusplus/python/setup.py', 'w') as fout:
+  with open('gwob/miniwob_plusplus/python/setup.py', 'w') as fout:
     fout.write("""
 
 from setuptools import setup
