@@ -1,7 +1,7 @@
 import os
 
 import gin
-import gym
+import gymnasium
 
 config_file_path = os.path.join(os.path.dirname(__file__), 'configs', 'web_navigation_env_config.gin')
 

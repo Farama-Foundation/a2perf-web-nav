@@ -18,8 +18,8 @@
 import json
 
 import gin
-import gym
-import gym.spaces
+import gymnasium
+import gymnasium.spaces
 import numpy as np
 from absl import logging
 from rl_perf.domains.web_nav.gwob.miniwob_plusplus.python.miniwob.fields import get_field_extractor
