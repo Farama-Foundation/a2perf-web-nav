@@ -170,7 +170,7 @@ class MiniWoBInstance(Thread):
 
         if self.headless:
             options.add_argument('headless')
-            options.add_argument('disable-gpu')
+            # options.add_argument('disable-gpu')
             options.add_argument('no-sandbox')
         else:
             options.add_argument('app=' + self.url)
@@ -306,7 +306,7 @@ class MiniWoBInstance(Thread):
 
     def get_state(self):
         """Get the current state.
-        
+
         Returns:
             MiniWoBState
         """
@@ -329,7 +329,7 @@ class MiniWoBInstance(Thread):
 
     def get_metadata(self):
         """Get other metadata.
-        
+
         Returns:
             dict with the following keys:
             - done (bool)
