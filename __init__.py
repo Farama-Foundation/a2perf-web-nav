@@ -1,7 +1,8 @@
 import os
 
 import gin
-import gymnasium
+import gymnasium as gym
+import gym as legacy_gym
 
 config_file_path = os.path.join(os.path.dirname(__file__), 'configs', 'web_navigation_env_config.gin')
 
@@ -11,6 +12,13 @@ data_dir = os.path.join(os.path.dirname(__file__), 'environment_generation', 'da
 gin.parse_config_files_and_bindings([config_file_path], None, finalize_config=False)
 gin.parse_config(f'environment.WebNavigationEnv.data_dir = "{data_dir}"')
 gym.envs.register(
+    id='WebNavigation-v0',
+    entry_point='rl_perf.domains.web_nav.gwob.CoDE.environment:WebNavigationEnv',
+    apply_api_compatibility=True,
+)
+
+# Some DeepRL frameworks still use the legacy gym interface, so we register the environment there as well.
+legacy_gym.envs.register(
     id='WebNavigation-v0',
     entry_point='rl_perf.domains.web_nav.gwob.CoDE.environment:WebNavigationEnv',
 )

@@ -18,8 +18,8 @@
 import json
 
 import gin
-import gymnasium
-import gymnasium.spaces
+import gym.spaces as spaces
+import gymnasium as gym
 import numpy as np
 from absl import logging
 from rl_perf.domains.web_nav.gwob.miniwob_plusplus.python.miniwob.fields import get_field_extractor
@@ -177,8 +177,8 @@ class WebEnvironment(gym.Env):
         # local vocab Vocabulary object, allows us to use the property decorator
         # members, that are not exposed from the Client obj.
         self.local_vocab = vocabulary_node.Vocabulary(
-                global_vocabulary,
-                max_vocabulary_size=global_vocabulary.max_vocabulary_size)
+            global_vocabulary,
+            max_vocabulary_size=global_vocabulary.max_vocabulary_size)
         self.local_vocab.add_to_vocabulary(vocabulary_utils.VOCAB)
         self.vocab_size = self.local_vocab.max_vocabulary_size
 
@@ -207,140 +207,140 @@ class WebEnvironment(gym.Env):
                 gminiwob_required_complexity != 'original' or
                 gminiwob_unrequired_complexity != 'original'):
             raise ValueError(
-                    'Setting environment difficult levels ({}, {}) via javascript requires no threading.'
-                    .format(gminiwob_required_complexity, gminiwob_unrequired_complexity))
+                'Setting environment difficult levels ({}, {}) via javascript requires no threading.'
+                .format(gminiwob_required_complexity, gminiwob_unrequired_complexity))
         self.subtasks = subtasks
         self.randomized_within_groups = randomized_within_groups
         self.randomized_across_groups = randomized_across_groups
         self.randomized_env_components = randomized_env_components
         if self.number_of_fields != self.keyboard_action_size:
             raise ValueError(
-                    'Number of fields for structured profile '
-                    'should be equal to type action size but got {} != {}.'.format(
-                            self.number_of_fields, self.keyboard_action_size))
+                'Number of fields for structured profile '
+                'should be equal to type action size but got {} != {}.'.format(
+                    self.number_of_fields, self.keyboard_action_size))
 
         if timestep_penalty < 0.0 or timestep_penalty > 1.0:
             raise ValueError(
-                    'Timestep penalty should be between 0.0 and 1.0 but got {}'.format(
-                            timestep_penalty))
+                'Timestep penalty should be between 0.0 and 1.0 but got {}'.format(
+                    timestep_penalty))
         self.timestep_penalty = timestep_penalty
         if cyclic_action_penalty < 0.0 or cyclic_action_penalty > 1.0:
             raise ValueError(
-                    'Cyclic action discount should be between 0.0 and 1.0 but got {}'
-                    .format(cyclic_action_penalty))
+                'Cyclic action discount should be between 0.0 and 1.0 but got {}'
+                .format(cyclic_action_penalty))
         self.cyclic_action_penalty = cyclic_action_penalty
 
         # this assumes that the observations are already converted to numpy
 
-        profile_space = gym.spaces.Box(
-                low=0.0,
-                high=float(self.vocab_size),
-                shape=(
-                        number_of_fields,
-                        profile_length,
-                        ),
-                dtype=np.int32)
-        profile_mask_space = gym.spaces.Box(
-                low=0.0,
-                high=1.0,
-                shape=(
-                        number_of_fields,
-                        profile_length,
-                        ),
-                dtype=np.float32)
+        profile_space = spaces.Box(
+            low=0.0,
+            high=float(self.vocab_size),
+            shape=(
+                number_of_fields,
+                profile_length,
+            ),
+            dtype=np.int32)
+        profile_mask_space = spaces.Box(
+            low=0.0,
+            high=1.0,
+            shape=(
+                number_of_fields,
+                profile_length,
+            ),
+            dtype=np.float32)
         self.space_dict = {
-                'profile_key': profile_space,
-                'profile_value': profile_space,
-                'profile_key_mask': profile_mask_space,
-                'profile_value_mask': profile_mask_space
-                }
+            'profile_key': profile_space,
+            'profile_value': profile_space,
+            'profile_key_mask': profile_mask_space,
+            'profile_value_mask': profile_mask_space
+        }
         self.space_dict.update({
-                'dom_elements':
-                    gym.spaces.Box(
-                            low=0.0,
-                            high=float(self.vocab_size),
-                            shape=(
-                                    number_of_dom_elements,
-                                    self.number_of_dom_attributes,
-                                    self.dom_attribute_sequence_length,
-                                    ),
-                            dtype=np.int32),
-                'dom_attribute_mask':  # this is to mask word embeddings
-                    gym.spaces.Box(
-                            low=0.0,
-                            high=1.0,
-                            shape=(
-                                    number_of_dom_elements,
-                                    self.number_of_dom_attributes,
-                                    self.dom_attribute_sequence_length,
-                                    ),
-                            dtype=np.float32),
-                # mask dom elements and profile fields in action distribution
-                'dom_profile_joint_mask':
-                    gym.spaces.Box(
-                            low=0.0,
-                            high=1.0,
-                            shape=(number_of_fields, number_of_dom_elements),
-                            dtype=np.float32),
-                # mask dom elements
-                'dom_elements_mask':
-                    gym.spaces.Box(
-                            low=0.0,
-                            high=1.0,
-                            shape=(number_of_dom_elements,),
-                            dtype=np.float32),
-                'time_step':  # current time step
-                    gym.spaces.Box(
-                            low=0.0, high=self._step_limit, shape=(1,), dtype=np.float32),
-                })
-        if self.use_dom_profile_intersection:
-            self.space_dict['dom_profile_intersection'] = gym.spaces.Box(
+            'dom_elements':
+                spaces.Box(
                     low=0.0,
                     high=float(self.vocab_size),
                     shape=(
-                            number_of_dom_elements,
-                            self.number_of_dom_attributes,
-                            number_of_fields,
-                            2,  # key and value
-                            self.dom_attribute_sequence_length,
-                            ),
-                    dtype=np.int32)
-            self.space_dict['dom_profile_intersection_mask'] = gym.spaces.Box(
+                        number_of_dom_elements,
+                        self.number_of_dom_attributes,
+                        self.dom_attribute_sequence_length,
+                    ),
+                    dtype=np.int32),
+            'dom_attribute_mask':  # this is to mask word embeddings
+                spaces.Box(
                     low=0.0,
                     high=1.0,
                     shape=(
-                            number_of_dom_elements,
-                            self.number_of_dom_attributes,
-                            number_of_fields,
-                            2,  # key and value
-                            self.dom_attribute_sequence_length,
-                            ),
-                    dtype=np.float32)
-            self.space_dict['dom_profile_jaccard_sim'] = gym.spaces.Box(
+                        number_of_dom_elements,
+                        self.number_of_dom_attributes,
+                        self.dom_attribute_sequence_length,
+                    ),
+                    dtype=np.float32),
+            # mask dom elements and profile fields in action distribution
+            'dom_profile_joint_mask':
+                spaces.Box(
                     low=0.0,
                     high=1.0,
-                    shape=(
-                            number_of_dom_elements,
-                            self.number_of_dom_attributes,
-                            number_of_fields,
-                            2,  # key and value
-                            3,  # jaccard, overlap/profile, overlap/dom
-                            ),
-                    dtype=np.float32)
+                    shape=(number_of_fields, number_of_dom_elements),
+                    dtype=np.float32),
+            # mask dom elements
+            'dom_elements_mask':
+                spaces.Box(
+                    low=0.0,
+                    high=1.0,
+                    shape=(number_of_dom_elements,),
+                    dtype=np.float32),
+            'time_step':  # current time step
+                spaces.Box(
+                    low=0.0, high=self._step_limit, shape=(1,), dtype=np.float32),
+        })
+        if self.use_dom_profile_intersection:
+            self.space_dict['dom_profile_intersection'] = spaces.Box(
+                low=0.0,
+                high=float(self.vocab_size),
+                shape=(
+                    number_of_dom_elements,
+                    self.number_of_dom_attributes,
+                    number_of_fields,
+                    2,  # key and value
+                    self.dom_attribute_sequence_length,
+                ),
+                dtype=np.int32)
+            self.space_dict['dom_profile_intersection_mask'] = spaces.Box(
+                low=0.0,
+                high=1.0,
+                shape=(
+                    number_of_dom_elements,
+                    self.number_of_dom_attributes,
+                    number_of_fields,
+                    2,  # key and value
+                    self.dom_attribute_sequence_length,
+                ),
+                dtype=np.float32)
+            self.space_dict['dom_profile_jaccard_sim'] = spaces.Box(
+                low=0.0,
+                high=1.0,
+                shape=(
+                    number_of_dom_elements,
+                    self.number_of_dom_attributes,
+                    number_of_fields,
+                    2,  # key and value
+                    3,  # jaccard, overlap/profile, overlap/dom
+                ),
+                dtype=np.float32)
         if self.number_of_dom_features > 0:
-            self.space_dict['dom_features'] = gym.spaces.Box(
-                    low=0.0,
-                    high=1.0,
-                    shape=(
-                            number_of_dom_elements,
-                            self.number_of_dom_features,
-                            ),
-                    dtype=np.float32)  # focused, tampered, is_new, is_div
-        self.observation_space = gym.spaces.Dict(self.space_dict)
+            self.space_dict['dom_features'] = spaces.Box(
+                low=0.0,
+                high=1.0,
+                shape=(
+                    number_of_dom_elements,
+                    self.number_of_dom_features,
+                ),
+                dtype=np.float32)  # focused, tampered, is_new, is_div
+        self.observation_space = spaces.Dict(self.space_dict)
         # We need a custom discrete space to configure dtype for acme framework
         self.action_space = custom_gym_spaces.Discrete(
-                number_of_dom_elements * number_of_action_types * keyboard_action_size,
-                np.int32)
+            number_of_dom_elements * number_of_action_types * keyboard_action_size,
+            np.int32)
 
         self._obs = None
         self._num_steps = 0
@@ -364,9 +364,9 @@ class WebEnvironment(gym.Env):
         options = {}
         if self.gminiwob_required_complexity != 'original' or self.gminiwob_unrequired_complexity != 'original':
             options = {
-                    'requiredComplexity': self.gminiwob_required_complexity,
-                    'unrequiredComplexity': self.gminiwob_unrequired_complexity
-                    }
+                'requiredComplexity': self.gminiwob_required_complexity,
+                'unrequiredComplexity': self.gminiwob_unrequired_complexity
+            }
         if self.subtasks:
             options['subTasks'] = self.subtasks
         if self.randomized_within_groups:
@@ -381,11 +381,11 @@ class WebEnvironment(gym.Env):
             for instance in self._wob_env.instances:
                 try:
                     instance.driver.execute_script('createEnvironment({});'.format(
-                            json.dumps(options)))
+                        json.dumps(options)))
                 except JavascriptException as e:
                     logging.info(
-                            'Error in running createEnvironment(...) function in the environment: %s',
-                            str(e))
+                        'Error in running createEnvironment(...) function in the environment: %s',
+                        str(e))
 
     def reset(self, raw_state=False):
         """Reset the wob environment and other related fields in this class.
@@ -449,17 +449,17 @@ class WebEnvironment(gym.Env):
                          str(raw_profile))
         # Update the 'ref's of elements in the current observation.
         self.prev_refs = [
-                dom_elem.ref for dom_elem in utils.get_dom_elements(self._obs)
-                ]
+            dom_elem.ref for dom_elem in utils.get_dom_elements(self._obs)
+        ]
         if not raw_state:  # wrap into a numpy array
             return web_observation_wrappers.wrap_observation(
-                    self._obs, self.structured_field_extractor, self._num_steps,
-                    self._step_limit, self.use_dom_profile_intersection,
-                    self.number_of_dom_features, self.local_vocab, self.profile_length,
-                    self.number_of_fields, self.dom_attribute_sequence_length,
-                    self.number_of_dom_attributes, self.prev_refs,
-                    self.number_of_dom_elements, self.use_only_profile_key,
-                    self.dom_profile_acted_list)
+                self._obs, self.structured_field_extractor, self._num_steps,
+                self._step_limit, self.use_dom_profile_intersection,
+                self.number_of_dom_features, self.local_vocab, self.profile_length,
+                self.number_of_fields, self.dom_attribute_sequence_length,
+                self.number_of_dom_attributes, self.prev_refs,
+                self.number_of_dom_elements, self.use_only_profile_key,
+                self.dom_profile_acted_list)
         else:
             return self._obs
 
@@ -490,11 +490,11 @@ class WebEnvironment(gym.Env):
         """
         if self.done:
             raise EnvironmentTerminateError(
-                    'Step is called while environment is done.')
+                'Step is called while environment is done.')
 
         # Convert input action to a web action tuple.
         action_type, profile_index, dom_element_index = self._convert_to_action_tuple(
-                action)
+            action)
 
         # Create miniwob level action.
         miniwob_action = self._create_miniwob_action(action_type, profile_index,
@@ -530,7 +530,7 @@ class WebEnvironment(gym.Env):
 
         # Return observation in numpy arrays.
         return self.wrap_observation(), np.array(
-                self.current_reward, np.float32), self.done, self.current_info
+            self.current_reward, np.float32), self.done, self.current_info
 
     @property
     def utterance(self):
@@ -542,21 +542,21 @@ class WebEnvironment(gym.Env):
         if not obs:
             obs = self._obs
         return web_observation_wrappers.wrap_observation(
-                obs=obs,
-                structured_field_extractor=self.structured_field_extractor,
-                num_steps=self._num_steps,
-                step_limit=self._step_limit,
-                use_dom_profile_intersection=self.use_dom_profile_intersection,
-                number_of_dom_features=self.number_of_dom_features,
-                local_vocabulary=self.local_vocab,
-                profile_length=self.profile_length,
-                number_of_fields=self.number_of_fields,
-                dom_attribute_sequence_length=self.dom_attribute_sequence_length,
-                number_of_dom_attributes=self.number_of_dom_attributes,
-                prev_refs=self.prev_refs,
-                number_of_dom_elements=self.number_of_dom_elements,
-                use_only_profile_key=self.use_only_profile_key,
-                dom_profile_acted_list=self.dom_profile_acted_list)
+            obs=obs,
+            structured_field_extractor=self.structured_field_extractor,
+            num_steps=self._num_steps,
+            step_limit=self._step_limit,
+            use_dom_profile_intersection=self.use_dom_profile_intersection,
+            number_of_dom_features=self.number_of_dom_features,
+            local_vocabulary=self.local_vocab,
+            profile_length=self.profile_length,
+            number_of_fields=self.number_of_fields,
+            dom_attribute_sequence_length=self.dom_attribute_sequence_length,
+            number_of_dom_attributes=self.number_of_dom_attributes,
+            prev_refs=self.prev_refs,
+            number_of_dom_elements=self.number_of_dom_elements,
+            use_only_profile_key=self.use_only_profile_key,
+            dom_profile_acted_list=self.dom_profile_acted_list)
 
     def _convert_to_action_tuple(self, action):
         """Convert a given action to an action tuple.
@@ -584,7 +584,7 @@ class WebEnvironment(gym.Env):
             (action_type, profile_index, dom_element_index) = action
         else:
             action_type = int(
-                    action / (self.number_of_dom_elements * self.keyboard_action_size))
+                action / (self.number_of_dom_elements * self.keyboard_action_size))
             action = action - action_type * (
                     self.number_of_dom_elements * self.keyboard_action_size)
             profile_index = int(action / self.number_of_dom_elements)
@@ -615,11 +615,11 @@ class WebEnvironment(gym.Env):
             # Generate the miniwob action. This will be directly run on the low level
             # environment.
             miniwob_action = utils.generate_web_action(
-                    utils.get_dom_elements(self._obs),
-                    action_type,
-                    dom_element_index,
-                    type_seq=type_seq,
-                    typed_refs=self.typed_refs)
+                utils.get_dom_elements(self._obs),
+                action_type,
+                dom_element_index,
+                type_seq=type_seq,
+                typed_refs=self.typed_refs)
         return miniwob_action
 
     def _execute_miniwob_action(self, miniwob_action):
@@ -643,15 +643,15 @@ class WebEnvironment(gym.Env):
         if not miniwob_action:
             return [self._obs], [np.float32(self.cyclic_action_penalty)
                                  ], [self.done], {
-                    'n': [self.current_info]
-                    }
+                'n': [self.current_info]
+            }
         try:
             # Run the miniwob action on the environment.
             states, rewards, dones, infos = self._wob_env.step([miniwob_action])
         except ValueError as e:
             logging.info(
-                    'Got a value error while getting utterance form the website: %s. Terminating episiode.',
-                    str(e))
+                'Got a value error while getting utterance form the website: %s. Terminating episiode.',
+                str(e))
             dones = [True]
             rewards = [0.0]
 
@@ -674,7 +674,7 @@ class WebEnvironment(gym.Env):
                 potential += instance.driver.execute_script('return potential();')
             except JavascriptException as e:
                 raise PotentialComputationError(
-                        f'Can not compute potential: {e}.') from e
+                    f'Can not compute potential: {e}.') from e
         return potential
 
     def _estimate_reward_and_diff(self, infos, states):
@@ -713,8 +713,8 @@ class WebEnvironment(gym.Env):
             # Keep a list of refs to elements. From this, a feature that corresponds
             # to if an element is new or it has been encountered before is computed.
             self.prev_refs = [
-                    dom_elem.ref for dom_elem in utils.get_dom_elements(self._obs)
-                    ]
+                dom_elem.ref for dom_elem in utils.get_dom_elements(self._obs)
+            ]
             if self.verbose:
                 logging.info('Diff: %s', str(diff))
             self._obs = states[0]
@@ -748,8 +748,8 @@ class WebEnvironment(gym.Env):
         """
         for i, screenshot in enumerate(self.screenshots):
             screenshot.save(
-                    f'{screenshot_save_dir}/episode_{str(self.episode_number)}_{str(i)}.png'
-                    )
+                f'{screenshot_save_dir}/episode_{str(self.episode_number)}_{str(i)}.png'
+            )
 
     def generate_screenshot_from_driver(self):
         """Generate a screenshot from current page."""

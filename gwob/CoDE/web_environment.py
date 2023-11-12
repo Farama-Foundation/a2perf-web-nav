@@ -240,7 +240,7 @@ class GMiniWoBWebEnvironment(base_web_environment.WebEnvironment):
             self._design_environment_add_edges(
                 json.dumps(design).replace('True', 'true').replace('False', 'false'))
         else:  # These are generated outside.
-            print(env_design_edge)
+            # print(env_design_edge)
             self._design_environment_add_edges(env_design_edge)
 
     def _set_conceptual_in_website(self):

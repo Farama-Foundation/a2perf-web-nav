@@ -16,7 +16,7 @@ def default_field_extractor(task_name):
       fields = json.loads(utterance)
       return Fields({str(x): str(y) for (x, y) in list(fields.items())})
     except:
-      print(utterance)
+      # print(utterance)
       raise ValueError('{} does not have a field extractor.'.format(task_name))
   return extractor
 

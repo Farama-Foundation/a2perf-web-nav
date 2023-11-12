@@ -17,8 +17,7 @@
 # For more information,
 # visit https://github.com/openai/gym/blob/master/gym/spaces/discrete.py
 
-import gymnasium
-import gymnasium.spaces
+import gym
 import numpy as np
 
 
