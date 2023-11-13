@@ -234,7 +234,7 @@ class WebEnvironment(gym.Env):
 
         profile_space = spaces.Box(
             low=0.0,
-            high=float(self.vocab_size),
+            high=float(self.vocab_size) - 1,
             shape=(
                 number_of_fields,
                 profile_length,
@@ -258,7 +258,7 @@ class WebEnvironment(gym.Env):
             'dom_elements':
                 spaces.Box(
                     low=0.0,
-                    high=float(self.vocab_size),
+                    high=float(self.vocab_size) - 1,
                     shape=(
                         number_of_dom_elements,
                         self.number_of_dom_attributes,
@@ -296,7 +296,7 @@ class WebEnvironment(gym.Env):
         if self.use_dom_profile_intersection:
             self.space_dict['dom_profile_intersection'] = spaces.Box(
                 low=0.0,
-                high=float(self.vocab_size),
+                high=float(self.vocab_size) - 1,
                 shape=(
                     number_of_dom_elements,
                     self.number_of_dom_attributes,
