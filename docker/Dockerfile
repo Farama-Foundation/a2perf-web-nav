@@ -1,4 +1,5 @@
-ARG BASE_IMAGE="nvcr.io/nvidia/driver:535-5.15.0-1040-nvidia-ubuntu22.04"
+#ARG BASE_IMAGE="nvcr.io/nvidia/driver:535-5.15.0-1040-nvidia-ubuntu22.04"
+ARG BASE_IMAGE="nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04"
 FROM $BASE_IMAGE
 
 
@@ -31,25 +32,25 @@ RUN ${APT_COMMAND} update && ${APT_COMMAND} install -y wget \
     libopenblas-dev
 
 # Install dependencies
-# add deadsnakes ppa then install python3.10
+# add deadsnakes ppa then install python3.8
 
 RUN ${APT_COMMAND} update && \
     ${APT_COMMAND} install software-properties-common && \
     add-apt-repository -y ppa:deadsnakes/ppa && \
     ${APT_COMMAND} update && \
-    ${APT_COMMAND} install python3.10 python3.10-distutils python3.10-dev python3.10-venv && \
+    ${APT_COMMAND} install python3.8 python3.8-distutils python3.8-dev python3.8-venv && \
     ${APT_COMMAND} clean && \
     rm -rf /var/lib/apt/lists/* && \
-    update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1
+    update-alternatives --install /usr/bin/python python /usr/bin/python3.8 1
 
 
-# remove old python3 symlink and recreate it pointing to python3.10
+# remove old python3 symlink and recreate it pointing to python3.8
 RUN rm /usr/bin/python3
-RUN ln -s /usr/bin/python3.10 /usr/bin/python3
+RUN ln -s /usr/bin/python3.8 /usr/bin/python3
 
 # Install python3 pip
 RUN wget https://bootstrap.pypa.io/get-pip.py
-RUN python3.10 get-pip.py
+RUN python3.8 get-pip.py
 
 RUN ${APT_COMMAND} update && ${APT_COMMAND} install -y \
     xvfb \
