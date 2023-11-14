@@ -1,23 +1,21 @@
 import json
-from absl import logging
 from queue import Queue
+from threading import Thread
 import time
 import traceback
 import urllib.parse
-from threading import Thread
 
+from absl import logging
 import numpy as np
-
+from rl_perf.domains.web_nav.gwob.miniwob_plusplus.python.miniwob.fields import Fields, get_field_extractor
+from rl_perf.domains.web_nav.gwob.miniwob_plusplus.python.miniwob.reward import get_original_reward
+from rl_perf.domains.web_nav.gwob.miniwob_plusplus.python.miniwob.screenshot import get_screenshot
+from rl_perf.domains.web_nav.gwob.miniwob_plusplus.python.miniwob.state import MiniWoBState
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-
-from rl_perf.domains.web_nav.gwob.miniwob_plusplus.python.miniwob.fields import Fields, get_field_extractor
-from rl_perf.domains.web_nav.gwob.miniwob_plusplus.python.miniwob.state import MiniWoBState
-from rl_perf.domains.web_nav.gwob.miniwob_plusplus.python.miniwob.reward import get_original_reward
-from rl_perf.domains.web_nav.gwob.miniwob_plusplus.python.miniwob.screenshot import get_screenshot
+from selenium.webdriver.support.ui import WebDriverWait
 
 
 class MiniWoBInstance(Thread):
