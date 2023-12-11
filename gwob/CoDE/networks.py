@@ -61,12 +61,12 @@ def embed_and_aggregate(embedder, tokens, mask, axis):
 
 def encode_profile(profile_encoder, embedder, observation, is_training,
     profile_value_dropout_rate):
-  profile_key_emb = embed_and_aggregate(embedder, observation['PROFILE_KEY'],
-                                        observation['PROFILE_KEY_MASK'],
+  profile_key_emb = embed_and_aggregate(embedder, observation[PROFILE_KEY],
+                                        observation[PROFILE_KEY_MASK],
                                         axis=-2)
   profile_value_emb = embed_and_aggregate(embedder,
-                                          observation['PROFILE_VALUE'],
-                                          observation['PROFILE_VALUE_MASK'],
+                                          observation[PROFILE_VALUE],
+                                          observation[PROFILE_VALUE_MASK],
                                           axis=-2)
 
   if is_training and profile_value_dropout_rate < 1.0:
@@ -84,12 +84,14 @@ def encode_profile(profile_encoder, embedder, observation, is_training,
   return profile_encoder(profile_emb)
 
 
-def encode_dom(dom_element_encoder, dom_encoder, observation, embedding_dim,
+def encode_dom(dom_element_encoder, dom_encoder, embedder, observation,
+    embedding_dim,
     use_bidirectional_encoding, dom_encoder_bw=None, fw_bw_encoder=None):
-  element_embeddings = embed_and_aggregate(dom_element_encoder,
-                                           observation['DOM_ELEMENTS'],
-                                           observation['DOM_ATTRIBUTE_MASK'],
+  element_embeddings = embed_and_aggregate(embedder=embedder,
+                                           tokens=observation[DOM_ELEMENTS],
+                                           mask=observation[DOM_ATTRIBUTE_MASK],
                                            axis=-2)
+
   element_embeddings_reshaped = tf.reshape(element_embeddings, [
       -1, tf.shape(element_embeddings)[1],
       tf.shape(element_embeddings)[2] * embedding_dim
@@ -97,7 +99,7 @@ def encode_dom(dom_element_encoder, dom_encoder, observation, embedding_dim,
 
   element_encodings = dom_element_encoder(element_embeddings_reshaped)
   element_encodings = tf.concat(
-      [element_encodings, observation['DOM_FEATURES']], axis=-1)
+      [element_encodings, observation[DOM_FEATURES]], axis=-1)
   dom_encoding, _ = dom_encoder(tf.transpose(element_encodings, [1, 0, 2]),
                                 dom_encoder.initial_state(
                                     tf.shape(element_encodings)[0]))
@@ -241,9 +243,11 @@ class DQNWebLSTM(snt.Module):
       flatten_output is True, flatten this tuple into an array.
     """
 
-    profile_enc = encode_profile(self._profile_encoder, self._embedder,
-                                 observation, is_training,
-                                 self._profile_value_dropout_rate)
+    profile_enc = encode_profile(profile_encoder=self._profile_encoder,
+                                 is_training=is_training,
+                                 embedder=self._embedder,
+                                 observation=observation,
+                                 profile_value_dropout_rate=self._profile_value_dropout_rate)
 
     dom_encoding = encode_dom(dom_element_encoder=self._dom_element_encoder,
                               dom_encoder=self._dom_encoder,
@@ -304,7 +308,7 @@ class DQNWebLSTM(snt.Module):
     return q_values
 
 
-class WebLSTMBase(snt.Module):
+class WebLSTMBase(tf.keras.layers.Layer):
   '''Base class for LSTM-based web navigation networks.'''
 
   def __init__(self,
@@ -350,7 +354,7 @@ class WebLSTMBase(snt.Module):
         for select action.
       name: Name of the layer.
     """
-    super().__init__(name=name)
+    super(WebLSTMBase, self).__init__(name=name)
     self._embedding_dim = embedding_dim
     if number_of_dom_encoder_layers < 0:
       raise ValueError(
@@ -378,24 +382,29 @@ class WebLSTMBase(snt.Module):
               [latent_dim] * number_of_dom_encoder_layers,
               activation=tf.nn.relu,
               activate_final=True),
-      ])
+      ], name='dom_element_encoder')
     else:
       self._dom_element_encoder = dom_element_encoder
     self._use_bidirectional_encoding = use_bidirectional_encoding
     # Encode DOM tree globally via LSTM.
 
     if dom_encoder is None:
-      self._dom_encoder = snt.UnrolledLSTM(latent_dim)
+      self._dom_encoder = snt.UnrolledLSTM(latent_dim, name='dom_encoder')
     else:
       self._dom_encoder = dom_encoder
 
     self._use_bidirectional_encoding = use_bidirectional_encoding
     if self._use_bidirectional_encoding:
       # Set or create bidirectional encoding components
-      self._dom_encoder_bw = dom_encoder_bw or snt.UnrolledLSTM(latent_dim)
+      self._dom_encoder_bw = dom_encoder_bw or snt.UnrolledLSTM(latent_dim,
+                                                                name='dom_encoder_bw')
       self._fw_bw_encoder = fw_bw_encoder or snt.nets.MLP([latent_dim],
                                                           activation=tf.identity,
-                                                          activate_final=False)
+                                                          activate_final=False,
+                                                          name='fw_bw_encoder')
+    else:
+      self._dom_encoder_bw = None
+      self._fw_bw_encoder = None
 
     # Set or create profile encoder
     if profile_encoder is None:
@@ -404,7 +413,7 @@ class WebLSTMBase(snt.Module):
               [latent_dim] * number_of_profile_encoder_layers,
               activation=tf.nn.relu,
               activate_final=True),
-      ])
+      ], name='profile_encoder')
     else:
       self._profile_encoder = profile_encoder
     number_of_action_types = 2
@@ -416,16 +425,18 @@ class WebLSTMBase(snt.Module):
           snt.nets.MLP([latent_dim, number_of_action_types],
                        activation=tf.nn.relu,
                        activate_final=False),
-      ])
+      ], name='action_type_encoder')
     self._profile_value_dropout_rate = profile_value_dropout
 
   def __call__(self, observation, is_training=True):
+    profile_enc = encode_profile(profile_encoder=self._profile_encoder,
+                                 is_training=is_training,
+                                 embedder=self._embedder,
+                                 observation=observation,
+                                 profile_value_dropout_rate=self._profile_value_dropout_rate)
 
-    profile_enc = encode_profile(self._profile_encoder, self._embedder,
-                                 observation, is_training,
-                                 self._profile_value_dropout_rate)
-
-    dom_encoding = encode_dom(dom_element_encoder=self._dom_element_encoder,
+    dom_encoding = encode_dom(embedder=self._embedder,
+                              dom_element_encoder=self._dom_element_encoder,
                               dom_encoder=self._dom_encoder,
                               observation=observation,
                               embedding_dim=self._embedding_dim,
@@ -488,23 +499,23 @@ class WebLSTMActor(WebLSTMBase):
       name=None,
       predict_action_type=True,
       use_bidirectional_encoding=False):
-    super().__init__(vocab_size=vocab_size,
-                     embedding_dim=embedding_dim,
-                     latent_dim=latent_dim, embedder=embedder,
-                     dom_element_encoder=dom_element_encoder,
-                     dom_encoder=dom_encoder,
-                     dom_encoder_bw=dom_encoder_bw,
-                     fw_bw_encoder=fw_bw_encoder,
-                     profile_encoder=profile_encoder,
-                     number_of_dom_encoder_layers=number_of_dom_encoder_layers,
-                     number_of_profile_encoder_layers=number_of_profile_encoder_layers,
-                     flatten_output=flatten_output,
-                     embedding_initializer=embedding_initializer,
-                     profile_value_dropout=profile_value_dropout,
-                     use_select_option_dim=use_select_option_dim,
-                     name=name,
-                     predict_action_type=predict_action_type,
-                     use_bidirectional_encoding=use_bidirectional_encoding)
+    super(WebLSTMActor, self).__init__(vocab_size=vocab_size,
+                                       embedding_dim=embedding_dim,
+                                       latent_dim=latent_dim, embedder=embedder,
+                                       dom_element_encoder=dom_element_encoder,
+                                       dom_encoder=dom_encoder,
+                                       dom_encoder_bw=dom_encoder_bw,
+                                       fw_bw_encoder=fw_bw_encoder,
+                                       profile_encoder=profile_encoder,
+                                       number_of_dom_encoder_layers=number_of_dom_encoder_layers,
+                                       number_of_profile_encoder_layers=number_of_profile_encoder_layers,
+                                       flatten_output=flatten_output,
+                                       embedding_initializer=embedding_initializer,
+                                       profile_value_dropout=profile_value_dropout,
+                                       use_select_option_dim=use_select_option_dim,
+                                       name=name,
+                                       predict_action_type=predict_action_type,
+                                       use_bidirectional_encoding=use_bidirectional_encoding)
 
   def __call__(self, observation, is_training=True):
     """Compute probabilities for web navigation tasks.
@@ -513,7 +524,7 @@ class WebLSTMActor(WebLSTMBase):
         user profile and DOM element encodings.
     """
     logits = super().__call__(observation, is_training)
-    return tf.nn.softmax(logits)
+    return logits
 
 
 class WebLSTMCritic(WebLSTMBase):
@@ -537,29 +548,35 @@ class WebLSTMCritic(WebLSTMBase):
       name=None,
       predict_action_type=True,
       use_bidirectional_encoding=False):
-    super().__init__(vocab_size=vocab_size,
-                     embedding_dim=embedding_dim,
-                     latent_dim=latent_dim, embedder=embedder,
-                     dom_element_encoder=dom_element_encoder,
-                     dom_encoder=dom_encoder,
-                     dom_encoder_bw=dom_encoder_bw,
-                     fw_bw_encoder=fw_bw_encoder,
-                     profile_encoder=profile_encoder,
-                     number_of_dom_encoder_layers=number_of_dom_encoder_layers,
-                     number_of_profile_encoder_layers=number_of_profile_encoder_layers,
-                     flatten_output=flatten_output,
-                     embedding_initializer=embedding_initializer,
-                     profile_value_dropout=profile_value_dropout,
-                     use_select_option_dim=use_select_option_dim,
-                     name=name,
-                     predict_action_type=predict_action_type,
-                     use_bidirectional_encoding=use_bidirectional_encoding)
+    super(WebLSTMCritic, self).__init__(vocab_size=vocab_size,
+                                        embedding_dim=embedding_dim,
+                                        latent_dim=latent_dim,
+                                        embedder=embedder,
+                                        dom_element_encoder=dom_element_encoder,
+                                        dom_encoder=dom_encoder,
+                                        dom_encoder_bw=dom_encoder_bw,
+                                        fw_bw_encoder=fw_bw_encoder,
+                                        profile_encoder=profile_encoder,
+                                        number_of_dom_encoder_layers=number_of_dom_encoder_layers,
+                                        number_of_profile_encoder_layers=number_of_profile_encoder_layers,
+                                        flatten_output=flatten_output,
+                                        embedding_initializer=embedding_initializer,
+                                        profile_value_dropout=profile_value_dropout,
+                                        use_select_option_dim=use_select_option_dim,
+                                        name=name,
+                                        predict_action_type=predict_action_type,
+                                        use_bidirectional_encoding=use_bidirectional_encoding)
+
+    self._value_network = snt.nets.MLP([latent_dim, 1],
+                                       activation=tf.nn.relu,
+                                       activate_final=False)
 
   def __call__(self, observation, is_training=True):
     """Computes state value for web navigation tasks.
     """
     logits = super().__call__(observation, is_training)
-    return logits
+    value = self._value_network(logits)
+    return tf.squeeze(value, axis=-1)
 
 
 @gin.configurable("DQNWebFF")
