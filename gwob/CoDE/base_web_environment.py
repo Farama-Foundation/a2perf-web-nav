@@ -18,7 +18,7 @@
 import json
 
 import gin
-import gym.spaces as spaces
+import gymnasium.spaces as spaces
 import gymnasium as gym
 import numpy as np
 from absl import logging

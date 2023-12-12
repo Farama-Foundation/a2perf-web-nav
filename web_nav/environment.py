@@ -5,9 +5,9 @@ import numpy as np
 import selenium
 from absl import logging
 
-from rl_perf.domains.web_nav.CoDE import utils
-from rl_perf.domains.web_nav.CoDE import vocabulary_node
-from rl_perf.domains.web_nav.CoDE import web_environment
+from rl_perf.domains.web_nav.gwob.CoDE import utils
+from rl_perf.domains.web_nav.gwob.CoDE import vocabulary_node
+from rl_perf.domains.web_nav.gwob.CoDE import web_environment
 
 
 @gin.configurable('WebNavigationEnv')

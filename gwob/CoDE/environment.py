@@ -67,3 +67,4 @@ class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
         """Sample a design from the design space."""
         website = self._random.choice(self._designs)
         return website.to_design()
+
