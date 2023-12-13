@@ -1,12 +1,13 @@
-import collections
 import copy
 import multiprocessing
 import os
 import pickle
+
+import numpy as np
 from absl import app
 from absl import flags
 from absl import logging
-import numpy as np
+
 from rl_perf.domains.web_nav.environment_generation import website_util
 from rl_perf.domains.web_nav.gwob.CoDE import web_primitives
 
@@ -30,24 +31,10 @@ _WEBSITES_TO_GENERATE = flags.DEFINE_integer(
 _OUTPUT_DIR = flags.DEFINE_string(
     'output_dir', './data', 'Directory to save generated websites to.'
 )
-
-
-def generate_website(current_website, next_website):
-  # We create a new website object, then copy over the pages from the two
-  new_website = website_util.Website(first_page=current_website._pages[0])
-  new_website._pages = copy.copy(current_website._pages)
-  new_website._pages.extend(next_website._pages)
-  new_website.update()
-
-  assert new_website._num_possible_correct_steps == (
-      current_website._num_possible_correct_steps
-      + next_website._num_possible_correct_steps
-  ), 'Number of possible correct steps should be the sum of the two websites.'
-
-  if new_website._num_possible_correct_steps <= _MAX_HORIZON.value:
-    logging.info('Successfully generated website.')
-    return [new_website]
-  return []
+_NUM_WEBSITES_PER_WORKER = flags.DEFINE_integer(
+    'num_websites_per_worker', 1000,
+    'Number of websites to generate per worker.'
+)
 
 
 def generate_page(page_id):
@@ -62,6 +49,34 @@ def generate_page(page_id):
     if page.num_possible_correct_interactions >= _MAX_HORIZON.value:
       break
   return page
+
+
+def generate_websites(websites, num_websites_to_generate, max_horizon):
+  """Generates new websites from existing websites."""
+  new_websites = []
+  while len(new_websites) < num_websites_to_generate:
+    current_website = np.random.choice(websites)
+    next_website = np.random.choice(websites)
+
+    # We create a new website object, then copy over the pages from the two
+    new_website = website_util.Website(first_page=current_website._pages[0])
+    new_website._pages = copy.copy(current_website._pages)
+    new_website._pages.extend(next_website._pages)
+    new_website.update()
+
+    assert new_website._num_possible_correct_steps == (
+        current_website._num_possible_correct_steps
+        + next_website._num_possible_correct_steps
+    ), 'Number of possible correct steps should be the sum of the two websites.'
+
+    del current_website
+    del next_website
+
+    if new_website._num_possible_correct_steps <= max_horizon:
+      logging.info('Successfully generated website.')
+      new_websites.append(new_website)
+
+  return new_websites
 
 
 def main(_):
@@ -85,30 +100,26 @@ def main(_):
   websites = [website_util.Website(p) for p in pages]
 
   # Generate new websites
-  combined_websites = []
-  while len(combined_websites) < _WEBSITES_TO_GENERATE.value:
-    # Generate pairs of websites
-    pairs = [
-        (np.random.choice(websites), np.random.choice(websites))
-        for _ in range(num_processes)
-    ]
 
-    # Use multiprocessing to generate new websites from pairs
+  while len(websites) < _WEBSITES_TO_GENERATE.value:
     with multiprocessing.Pool(num_processes) as pool:
-      new_websites = pool.starmap(generate_website, pairs)
+      new_websites = pool.starmap(generate_websites, [
+          (websites, _NUM_WEBSITES_PER_WORKER,
+           _MAX_HORIZON.value)] * num_processes)
 
     new_websites = [website for sublist in new_websites for website in sublist]
     logging.info('Generated %d new websites.', len(new_websites))
-    combined_websites.extend(new_websites)
-    logging.info('Total websites: %d', len(combined_websites))
+    websites.extend(new_websites)
+
+    logging.info('Total websites: %d', len(websites))
 
   logging.info(
-      'All Workers Finished. Generated %d websites.', len(combined_websites)
+      'All Workers Finished. Generated %d websites.', len(websites)
   )
-  with open(
-      os.path.join(_OUTPUT_DIR.value, 'combined_websites.pkl'), 'wb'
-  ) as f:
-    pickle.dump(combined_websites, f)
+
+  designs = [website.to_design() for website in websites]
+  with open(os.path.join(_OUTPUT_DIR.value, 'designs.pkl'), 'wb') as f:
+    pickle.dump(designs, f)
 
 
 if __name__ == '__main__':
