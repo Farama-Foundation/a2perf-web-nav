@@ -68,6 +68,7 @@ RUN ${APT_COMMAND} update && ${APT_COMMAND} install -y \
     openssh-server \
     ssh \
     dbus \
+    dbus-x11 \
     notification-daemon
 
 
@@ -114,4 +115,4 @@ EXPOSE 2020
 
 USER user
 
-ENTRYPOINT sudo service ssh restart && bash
+ENTRYPOINT sudo service ssh restart && sudo service dbus restart && bash

@@ -59,7 +59,7 @@ def embed_and_aggregate(embedder, tokens, mask, axis):
   return aggregated_tokens
 
 
-def encode_profile(profile_encoder, embedder, observation, is_training,
+def encode_profile(profile_encoder, embedder, observation, training,
     profile_value_dropout_rate):
   profile_key_emb = embed_and_aggregate(embedder, observation[PROFILE_KEY],
                                         observation[PROFILE_KEY_MASK],
@@ -69,7 +69,7 @@ def encode_profile(profile_encoder, embedder, observation, is_training,
                                           observation[PROFILE_VALUE_MASK],
                                           axis=-2)
 
-  if is_training and profile_value_dropout_rate < 1.0:
+  if training and profile_value_dropout_rate < 1.0:
     profile_value_emb_shp = tf.shape(profile_value_emb)
     profile_value_emb = tf.nn.dropout(profile_value_emb,
                                       profile_value_dropout_rate,
@@ -227,7 +227,7 @@ class DQNWebLSTM(snt.Module):
                                          activation=tf.nn.relu,
                                          activate_final=False)
 
-  def __call__(self, observation, is_training=True):
+  def __call__(self, observation, training=True):
     """Compute Q values for web navigation tasks.
 
       Encodes flattened DOM elements using LSTM and outputs Q values using user
@@ -236,7 +236,7 @@ class DQNWebLSTM(snt.Module):
     Args:
       observation: A nested observation (dictionary of observations) from web
         navigation environment.
-      is_training: Is the model training. Required for applying dropout.
+      training: Is the model training. Required for applying dropout.
 
     Returns:
       Q values of the form (dom elements, action type, type sequence). If
@@ -244,7 +244,7 @@ class DQNWebLSTM(snt.Module):
     """
 
     profile_enc = encode_profile(profile_encoder=self._profile_encoder,
-                                 is_training=is_training,
+                                 training=training,
                                  embedder=self._embedder,
                                  observation=observation,
                                  profile_value_dropout_rate=self._profile_value_dropout_rate)
@@ -252,6 +252,7 @@ class DQNWebLSTM(snt.Module):
     dom_encoding = encode_dom(dom_element_encoder=self._dom_element_encoder,
                               dom_encoder=self._dom_encoder,
                               observation=observation,
+                              embedder=self._embedder,
                               embedding_dim=self._embedding_dim,
                               use_bidirectional_encoding=self._use_bidirectional_encoding,
                               dom_encoder_bw=self._dom_encoder_bw,
@@ -428,9 +429,9 @@ class WebLSTMBase(tf.keras.layers.Layer):
       ], name='action_type_encoder')
     self._profile_value_dropout_rate = profile_value_dropout
 
-  def __call__(self, observation, is_training=True):
+  def __call__(self, observation, training=True):
     profile_enc = encode_profile(profile_encoder=self._profile_encoder,
-                                 is_training=is_training,
+                                 training=training,
                                  embedder=self._embedder,
                                  observation=observation,
                                  profile_value_dropout_rate=self._profile_value_dropout_rate)
@@ -468,7 +469,7 @@ class WebLSTMBase(tf.keras.layers.Layer):
         1 - dom_profile_joint_mask)
 
     # If the RL framework (tf-agents + acme) requires a flat vector for outputs
-    # flatten scores here and unflatten in the web environment.
+    # flatten scores herde and unflatten in the web environment.
     if self._flatten_output:
       logits_shape_prod = tf.math.reduce_prod(tf.shape(logits)[1:4])
       logits = tf.reshape(logits, [-1, logits_shape_prod])
@@ -517,13 +518,13 @@ class WebLSTMActor(WebLSTMBase):
                                        predict_action_type=predict_action_type,
                                        use_bidirectional_encoding=use_bidirectional_encoding)
 
-  def __call__(self, observation, is_training=True):
+  def __call__(self, observation, training=True):
     """Compute probabilities for web navigation tasks.
 
         Encodes flattened DOM elements using LSTM and outputs probabilities using
         user profile and DOM element encodings.
     """
-    logits = super().__call__(observation, is_training)
+    logits = super().__call__(observation, training)
     return logits
 
 
@@ -571,10 +572,10 @@ class WebLSTMCritic(WebLSTMBase):
                                        activation=tf.nn.relu,
                                        activate_final=False)
 
-  def __call__(self, observation, is_training=True):
+  def __call__(self, observation, training=True):
     """Computes state value for web navigation tasks.
     """
-    logits = super().__call__(observation, is_training)
+    logits = super().__call__(observation, training)
     value = self._value_network(logits)
     return tf.squeeze(value, axis=-1)
 
@@ -667,7 +668,7 @@ class DQNWebFF(snt.Module):
                                          activation=tf.nn.relu,
                                          activate_final=False)
 
-  def __call__(self, observation, is_training=True):
+  def __call__(self, observation, training=True):
     """Compute Q values for web navigation tasks.
 
       Encodes flattened DOM elements using LSTM and outputs Q values using user
@@ -676,7 +677,7 @@ class DQNWebFF(snt.Module):
     Args:
       observation: A nested observation (dictionary of observations) from web
         navigation environment.
-      is_training: Is the model training. Required for applying dropout.
+      training: Is the model training. Required for applying dropout.
 
     Returns:
       Q values of the form (dom elements, action type, type sequence). If
@@ -694,7 +695,7 @@ class DQNWebFF(snt.Module):
         self._embedder(observation[PROFILE_VALUE]),
         mask=observation[PROFILE_VALUE_MASK],
         axis=-2)  # (batch, fields, tokens, dim) --> (batch, fields, dim)
-    if is_training:
+    if training:
       profile_value_emb_shp = tf.shape(profile_value_emb)
       profile_value_emb = tf.nn.dropout(
           profile_value_emb,
