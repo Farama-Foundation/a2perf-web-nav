@@ -51,12 +51,16 @@ def generate_page(page_id):
   return page
 
 
-def generate_websites(websites, num_websites_to_generate, max_horizon):
+def generate_websites(website_designs, num_websites_to_generate, max_horizon):
   """Generates new websites from existing websites."""
+
   new_websites = []
   while len(new_websites) < num_websites_to_generate:
-    current_website = np.random.choice(websites)
-    next_website = np.random.choice(websites)
+    current_website = np.random.choice(website_designs)
+    next_website = np.random.choice(website_designs)
+
+    current_website = website_util.Website(design=current_website)
+    next_website = website_util.Website(design=next_website)
 
     # We create a new website object, then copy over the pages from the two
     new_website = website_util.Website(first_page=current_website._pages[0])
@@ -73,9 +77,10 @@ def generate_websites(websites, num_websites_to_generate, max_horizon):
     del next_website
 
     if new_website._num_possible_correct_steps <= max_horizon:
-      logging.info('Successfully generated website.')
       new_websites.append(new_website)
 
+  # Return designs since they are much easier to pickle
+  new_websites = [website.to_design() for website in new_websites]
   return new_websites
 
 
@@ -97,14 +102,13 @@ def main(_):
     pickle.dump(pages, f)
 
   # Using pages to generate initial websites
-  websites = [website_util.Website(p) for p in pages]
+  websites = [website_util.Website(first_page=p).to_design() for p in pages]
 
   # Generate new websites
-
   while len(websites) < _WEBSITES_TO_GENERATE.value:
     with multiprocessing.Pool(num_processes) as pool:
       new_websites = pool.starmap(generate_websites, [
-          (websites, _NUM_WEBSITES_PER_WORKER,
+          (websites, _NUM_WEBSITES_PER_WORKER.value,
            _MAX_HORIZON.value)] * num_processes)
 
     new_websites = [website for sublist in new_websites for website in sublist]
@@ -116,10 +120,17 @@ def main(_):
   logging.info(
       'All Workers Finished. Generated %d websites.', len(websites)
   )
+  websites = [website_util.Website(design=design) for design in websites]
 
+  # Sort the websites by difficulty
+  websites.sort(key=lambda website: website.difficulty)
+  logging.info('Sorted websites by difficulty.')
+
+  # Convert websites to designs
   designs = [website.to_design() for website in websites]
   with open(os.path.join(_OUTPUT_DIR.value, 'designs.pkl'), 'wb') as f:
     pickle.dump(designs, f)
+    logging.info('Saved designs to %s', _OUTPUT_DIR.value)
 
 
 if __name__ == '__main__':
