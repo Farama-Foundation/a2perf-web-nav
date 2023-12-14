@@ -18,7 +18,7 @@ ssh-keygen -t rsa -b 4096 -C "web_nav" -f "$WEB_NAV_DIR/.ssh/id_rsa" -N ""
 # ssh user@127.0.0.1 -p 2022 -i .ssh/id_rsa
 
 # Set the environment variable for where the project is located
-docker build --build-arg WEB_NAV_DIR="$WEB_NAV_DIR" -f $WEB_NAV_DIR/docker/Dockerfile -t rlperf/web_nav:latest .
+docker build --build-arg WEB_NAV_DIR="$WEB_NAV_DIR" -f $WEB_NAV_DIR/docker/Dockerfile -t rlperf/web_navigation:latest .
 
 # If you do not have administrator rights to the host machine, remove the privileged command. Also do this if you only want to run headless mode.
 xhost + local: # Allow docker to access the display
@@ -29,7 +29,7 @@ docker run --rm \
   -v "$HOME/.Xauthority:/user/.Xauthority:rw" \
   -v /tmp/.X11-unix:/tmp/.X11-unix \
   --name $WEB_NAV_CONTAINER_NAME \
-  --workdir=/web_nav \
+  --workdir=/web_navigation \
   --privileged \
   --gpus=all \
-  rlperf/web_nav:latest
+  rlperf/web_navigation:latest

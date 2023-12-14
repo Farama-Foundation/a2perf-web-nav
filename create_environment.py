@@ -11,7 +11,7 @@ from rl_perf.domains.web_nav.CoDE import web_primitives
 
 def main(_):
     # Create the environment.
-    gin.parse_config_files_and_bindings(["./web_nav/configs/envdesign.gin"], None)
+    gin.parse_config_files_and_bindings(["./web_navigation/configs/envdesign.gin"], None)
     env = gym.make('WebNavigation-v0')
     print(env)
 
