@@ -52,7 +52,7 @@ class MiniWoBInstance(Thread):
   FLIGHT_TASK_WIDTH = 375
   FLIGHT_TASK_HEIGHT = 667
 
-  def __init__(self, index, subdomain, seed, headless=False,
+  def __init__(self, index, subdomain, seed,
       base_url=None, cache_state=False, threading=True, chrome_options=None,
       reward_processor=None, wait_ms=0., block_on_reset=True,
       refresh_freq=0, initial_mode='train'):
@@ -62,11 +62,11 @@ class MiniWoBInstance(Thread):
         index (int): Instance index
         subdomain (str): MiniWoB task name (e.g., "click-test")
         seed (object): Random seed
-        headless (bool): Whether to render GUI
         base_url (str): Base URL (default to localhost at port 8000)
         cache_state (bool): Whether to cache and return the initial
             state; only make sense if the task interface never changes
         threading (bool): Whether to run this instance as a Thread
+        chrome_options (list[str]): Additional Chrome options
         reward_processor (callable; optional): A function that takes
             the metadata and return a reward (see miniwob.reward)
         wait_ms (float): Pause the instance after each action for this
@@ -84,7 +84,6 @@ class MiniWoBInstance(Thread):
     self.died = False
     self.index = index
     self.init_seed = repr(seed)
-    self.headless = headless
     self.chrome_options = chrome_options
     print('base_url: ', base_url)
     base_url = base_url or self.DEFAULT_BASE_URL
@@ -174,11 +173,10 @@ class MiniWoBInstance(Thread):
     assert not hasattr(self, 'driver'), \
       'Instance {} already has a driver'.format(self.index)
     options = webdriver.ChromeOptions()
-    if self.headless:
-      options.add_argument('headless')
-      # options.add_argument('disable-gpu')
-      options.add_argument('no-sandbox')
-    else:
+
+    headless = '--headless' in self.chrome_options
+    if not headless:
+      # custom window sizing if rendering
       options.add_argument('--use-gl=swiftshader')
       options.add_argument('app=' + self.url)
       options.add_argument('window-size={},{}'
@@ -192,7 +190,7 @@ class MiniWoBInstance(Thread):
 
     self.driver = webdriver.Chrome(options=options, )
     self.driver.implicitly_wait(10)
-    if self.headless:
+    if headless:
       self.driver.get(self.url)
     try:
       WebDriverWait(self.driver, 5).until(
