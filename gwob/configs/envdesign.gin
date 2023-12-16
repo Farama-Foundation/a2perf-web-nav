@@ -1,8 +1,8 @@
 # Configs for CoDE.
 
-from rl_perf.domains.web_nav.gwob.CoDE import utils
-from rl_perf.domains.web_nav.gwob.CoDE import web_environment
-from rl_perf.domains.web_nav.gwob.CoDE import q_networks
+from a2perf.domains.web_navigation.gwob.CoDE import utils
+from a2perf.domains.web_navigation.gwob.CoDE import web_environment
+from a2perf.domains.web_navigation.gwob.CoDE import q_networks
 
 GMiniWoBWebEnvironment.subdomain="gminiwob.generic_website"
 GMiniWoBWebEnvironment.profile_length=10

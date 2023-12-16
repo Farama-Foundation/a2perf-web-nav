@@ -2,7 +2,7 @@ import os
 import sys
 from absl import logging
 
-from rl_perf.domains.web_nav.gwob.miniwob_plusplus.python.miniwob.instance import MiniWoBInstance
+from a2perf.domains.web_navigation.gwob.miniwob_plusplus.python.miniwob.instance import MiniWoBInstance
 
 
 class MiniWoBEnvironment(object):

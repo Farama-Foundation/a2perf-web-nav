@@ -8,8 +8,8 @@ from absl import app
 from absl import flags
 from absl import logging
 
-from rl_perf.domains.web_nav.environment_generation import website_util
-from rl_perf.domains.web_nav.gwob.CoDE import web_primitives
+from a2perf.domains.web_navigation.environment_generation import website_util
+from a2perf.domains.web_navigation.gwob.CoDE import web_primitives
 
 # Define flags
 _SEED = flags.DEFINE_integer('seed', 1, 'Random seed for web page generation')

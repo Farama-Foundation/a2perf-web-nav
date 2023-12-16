@@ -1,9 +1,9 @@
 import gin
 import numpy as np
 
-from rl_perf.domains.web_nav.gwob.CoDE import vocabulary_node
-from rl_perf.domains.web_nav.gwob.CoDE import web_environment
-from rl_perf.domains.web_nav.gwob.CoDE import web_primitives
+from a2perf.domains.web_navigation.gwob.CoDE import vocabulary_node
+from a2perf.domains.web_navigation.gwob.CoDE import web_environment
+from a2perf.domains.web_navigation.gwob.CoDE import web_primitives
 
 PASSIVE_PRIMITIVES = [
     'carousel',

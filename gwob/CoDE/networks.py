@@ -144,7 +144,8 @@ class WebLSTMEncoder(tf.keras.layers.Layer):
       use_select_option_dim=False,
       name=None,
       predict_action_type=True,
-      use_bidirectional_encoding=False):
+      use_bidirectional_encoding=False,
+      return_profile_and_dom_encodings=False):
     """LSTM-based DOM encoder.
 
     Profile and DOM are independently encoded into tensors where profile tensor
@@ -181,6 +182,7 @@ class WebLSTMEncoder(tf.keras.layers.Layer):
                         " %d") % number_of_profile_encoder_layers)
     self._flatten_output = flatten_output
     self._predict_action_type = predict_action_type
+    self._return_profile_and_dom_encodings = return_profile_and_dom_encodings
     # Embedding matrix.
     if embedder is None:
       self._embedder = snt.Embed(
@@ -243,7 +245,9 @@ class WebLSTMEncoder(tf.keras.layers.Layer):
       ], name='action_type_encoder')
     self._profile_value_dropout_rate = profile_value_dropout
 
-  def __call__(self, observation, training=True):
+  def call(self, inputs, *args, **kwargs):
+    observation = inputs
+    training = kwargs.get('training', False)
     profile_enc = encode_profile(profile_encoder=self._profile_encoder,
                                  training=training,
                                  embedder=self._embedder,
@@ -258,11 +262,14 @@ class WebLSTMEncoder(tf.keras.layers.Layer):
                               use_bidirectional_encoding=self._use_bidirectional_encoding,
                               dom_encoder_bw=self._dom_encoder_bw,
                               fw_bw_encoder=self._fw_bw_encoder)
+    if self._return_profile_and_dom_encodings:
+      return profile_enc, dom_encoding
 
     logits_joint = tf.reduce_sum(
         tf.expand_dims(dom_encoding, axis=1) *
         tf.expand_dims(profile_enc, axis=2),
         axis=-1)  # (batch, fields, elements)
+
     logits = tf.expand_dims(
         logits_joint, axis=1)  # (batch, 1, fields, elements)
 
@@ -324,8 +331,8 @@ class WebLSTMValueNetwork(network.Network):
 
     # Pass input through LSTM
     state = self._lstm_encoder(observation=observation,
-                       training=training,
-                       )
+                               training=training,
+                               )
 
     # Get the value prediction for each observation
     output_value = tf.nest.map_structure(self._postprocessing_layers, state)
@@ -393,15 +400,19 @@ class WebLSTMCategoricalProjectionNetwork(network.DistributionNetwork):
         sample_spec=sample_spec,
         dtype=sample_spec.dtype)
 
-  def call(self, inputs, outer_rank, training=False, mask=None):
+  def call(self, inputs, *args, **kwargs):
+
     # outer_rank is needed because the projection is not done on the raw
     # observations so getting the outer rank is hard as there is no spec to
     # compare to.
+    outer_rank = kwargs.get('outer_rank')
+    if outer_rank is None:
+      raise ValueError("outer_rank not provided")
     batch_squash = utils.BatchSquash(outer_rank)
 
     # Our input is a dictionary, so we need to nest map batch_squash
     inputs = tf.nest.map_structure(batch_squash.flatten, inputs)
-
+    training = kwargs.get('training', False)
     logits = self._projection_layer(inputs, training=training)
     logits = tf.reshape(logits, [-1] + self._output_shape.as_list())
 
@@ -458,14 +469,11 @@ class WebLSTMActorDistributionNetwork(network.DistributionNetwork):
   def output_tensor_spec(self):
     return self._output_tensor_spec
 
-  def call(self,
-      observation,
-      step_type,
-      network_state,
-      training=False,
-      mask=None):
-    batch_squash = None
-
+  def call(self, inputs, *args, **kwargs):
+    observation = inputs
+    training = kwargs.get('training', False)
+    mask = kwargs.get('mask', None)
+    network_state = kwargs.get('network_state', ())
     outer_rank = tf_agents.utils.nest_utils.get_outer_rank(
         observation, self.input_tensor_spec)
 
@@ -478,6 +486,111 @@ class WebLSTMActorDistributionNetwork(network.DistributionNetwork):
         call_projection_net, self._projection_networks)
 
     return output_actions, network_state
+
+
+class WebLSTMQNetwork(network.Network):
+  """LSTM-based Q network."""
+
+  def __init__(self, vocab_size,
+      embedding_dim,
+      latent_dim,
+      number_of_dom_encoder_layers=1,
+      number_of_profile_encoder_layers=1,
+      flatten_output=True,
+      embedding_initializer=None,
+      profile_value_dropout=0.0,
+      q_min=None,
+      q_max=None,
+      use_select_option_dim=False,
+      name=None,
+      return_state_value=False,
+      predict_action_type=True,
+
+      use_bidirectional_encoding=False,
+      return_dom_profile_encodings=True):
+
+    super(WebLSTMQNetwork, self).__init__(name=name)
+    self._return_state_value = return_state_value
+    if return_state_value:
+      self._value_network = snt.nets.MLP([latent_dim, 1],
+                                         activation=tf.nn.relu,
+                                         activate_final=False)
+    self._q_min = q_min
+    self._q_max = q_max
+    if self._q_min and self._q_max and self._q_min > self._q_max:
+      raise ValueError(
+          "Q value bounds are invalid: q_min({}) > q_max({}).".format(
+              self._q_min, self._q_max))
+    self._lstm_encoder = WebLSTMEncoder(vocab_size=vocab_size,
+                                        embedding_dim=embedding_dim,
+                                        latent_dim=latent_dim,
+                                        number_of_dom_encoder_layers=number_of_dom_encoder_layers,
+                                        number_of_profile_encoder_layers=number_of_profile_encoder_layers,
+                                        flatten_output=flatten_output,
+                                        embedding_initializer=embedding_initializer,
+                                        profile_value_dropout=profile_value_dropout,
+                                        use_select_option_dim=use_select_option_dim,
+                                        name=name,
+                                        return_profile_and_dom_encodings=return_dom_profile_encodings,
+                                        predict_action_type=predict_action_type,
+                                        use_bidirectional_encoding=use_bidirectional_encoding)
+
+  def call(self, inputs, *args, **kwargs):
+    observation = inputs
+    training = kwargs.get('training', False)
+    network_state = kwargs.get('network_state', ())
+    profile_encoding, dom_encoding = self._lstm_encoder(inputs=observation,
+                                                        training=training)
+
+    q_values_joint = tf.reduce_sum(
+        tf.expand_dims(dom_encoding, axis=1) *
+        tf.expand_dims(profile_encoding, axis=2),
+        axis=-1)  # (batch, fields, elements)
+    q_values = tf.expand_dims(
+        q_values_joint, axis=1)  # (batch, 1, fields, elements)
+
+    # Compute Q values for selecting action type.
+    if self._lstm_encoder._predict_action_type:
+      q_values_action_type = tf.transpose(
+          self._lstm_encoder._action_type_encoder(dom_encoding),
+          [0, 2, 1])  # (batch, 2, elements)
+      # Combine these two Q values
+      q_values = q_values + tf.expand_dims(
+          q_values_action_type, axis=2)  # (batch, 2, fields, elements)
+
+    # Prune DOM and field scores jointly. This will also prune padded dom
+    # elements.
+    dom_profile_joint_mask = tf.expand_dims(
+        observation[DOM_PROFILE_JOINT_MASK], axis=1)
+    q_values = dom_profile_joint_mask * q_values - 999999. * (
+        1 - dom_profile_joint_mask)
+
+    # Scale scores based on input minimum and maximum values.
+    if self._q_min and self._q_max:
+      q_values = tf.sigmoid(q_values) * (self._q_max -
+                                         self._q_min) + self._q_min
+
+    # If the RL framework (tf-agents + acme) requires a flat vector for outputs
+    # flatten scores here and unflatten in the web environment.
+    if self._lstm_encoder._flatten_output:
+      q_values_shape_prod = tf.math.reduce_prod(tf.shape(q_values)[1:4])
+      q_values = tf.reshape(q_values, [-1, q_values_shape_prod])
+    elif not self._lstm_encoder._predict_action_type:
+      q_values = tf.squeeze(q_values, axis=1)
+
+    ############################################################################
+    # State value prediction.
+    ############################################################################
+    # Predict state value.
+    if self._return_state_value:
+      value = self._value_network(
+          tf.reduce_sum(
+              tf.expand_dims(
+                  tf.reduce_sum(tf.nn.softmax(q_values_joint), axis=1), axis=-1)
+              * dom_encoding,
+              axis=1))
+      return q_values, tf.squeeze(value, axis=-1), network_state
+    return q_values, network_state
 
 
 @gin.configurable("DQNWebLSTM")

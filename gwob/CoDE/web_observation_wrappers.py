@@ -16,11 +16,11 @@
 """Wrappers for mapping text-based web observations to numpy arrays."""
 import datetime
 
-from rl_perf.domains.web_nav.gwob.CoDE.utils import dom_attributes
-from rl_perf.domains.web_nav.gwob.CoDE.utils import dom_element_representation
-from rl_perf.domains.web_nav.gwob.CoDE.utils import get_dom_elements
-from rl_perf.domains.web_nav.gwob.CoDE.utils import indexify
-from rl_perf.domains.web_nav.gwob.CoDE.vocabulary_utils import tokenize
+from a2perf.domains.web_navigation.gwob.CoDE.utils import dom_attributes
+from a2perf.domains.web_navigation.gwob.CoDE.utils import dom_element_representation
+from a2perf.domains.web_navigation.gwob.CoDE.utils import get_dom_elements
+from a2perf.domains.web_navigation.gwob.CoDE.utils import indexify
+from a2perf.domains.web_navigation.gwob.CoDE.vocabulary_utils import tokenize
 import gin
 import numpy as np
 

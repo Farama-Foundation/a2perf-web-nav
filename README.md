@@ -89,12 +89,12 @@ using an LSTM-based DQN to generate logits and values.
 import gin
 import numpy as np
 
-from rl_perf.domains.web_nav.gwob.CoDE import test_websites
-from rl_perf.domains.web_nav.gwob.CoDE import utils
-from rl_perf.domains.web_nav.gwob.CoDE import vocabulary_node
-from rl_perf.domains.web_nav.gwob.CoDE import web_environment
-from rl_perf.domains.web_nav.gwob.CoDE import web_primitives
-from rl_perf.domains.web_nav.gwob.CoDE import q_networks
+from a2perf.domains.web_navigation.gwob.CoDE import test_websites
+from a2perf.domains.web_navigation.gwob.CoDE import utils
+from a2perf.domains.web_navigation.gwob.CoDE import vocabulary_node
+from a2perf.domains.web_navigation.gwob.CoDE import web_environment
+from a2perf.domains.web_navigation.gwob.CoDE import web_primitives
+from a2perf.domains.web_navigation.gwob.CoDE import q_networks
 
 gin.parse_config_files_and_bindings(["/path/to/compositional_rl/gwob/configs/envdesign.gin"], None)
 

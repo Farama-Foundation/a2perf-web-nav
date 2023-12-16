@@ -4,8 +4,8 @@ import time
 
 import numpy as np
 
-from rl_perf.domains.web_nav.gwob.miniwob_plusplus.python.miniwob.environment import MiniWoBEnvironment
-from rl_perf.domains.web_nav.gwob.miniwob_plusplus.python.miniwob.action import MiniWoBCoordClick, MiniWoBElementClick, MiniWoBTerminate
+from a2perf.domains.web_navigation.gwob.miniwob_plusplus.python.miniwob.environment import MiniWoBEnvironment
+from a2perf.domains.web_navigation.gwob.miniwob_plusplus.python.miniwob.action import MiniWoBCoordClick, MiniWoBElementClick, MiniWoBTerminate
 
 
 class MiniWoBTester(object):

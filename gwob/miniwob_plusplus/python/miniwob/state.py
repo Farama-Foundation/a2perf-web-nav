@@ -1,6 +1,6 @@
 import re
 
-from rl_perf.domains.web_nav.gwob.miniwob_plusplus.python.miniwob.utils import Phrase
+from a2perf.domains.web_navigation.gwob.miniwob_plusplus.python.miniwob.utils import Phrase
 
 
 class MiniWoBState(object):

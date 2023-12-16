@@ -21,11 +21,11 @@ import re
 import gin
 import numpy as np
 
-from rl_perf.domains.web_nav.gwob.CoDE.vocabulary_utils import tokenize
-from rl_perf.domains.web_nav.gwob.miniwob_plusplus.python.miniwob import action
-from rl_perf.domains.web_nav.gwob.miniwob_plusplus.python.miniwob import environment
-from rl_perf.domains.web_nav.gwob.miniwob_plusplus.python.miniwob import reward
-from rl_perf.domains.web_nav.gwob.miniwob_plusplus.python.miniwob import state
+from a2perf.domains.web_navigation.gwob.CoDE.vocabulary_utils import tokenize
+from a2perf.domains.web_navigation.gwob.miniwob_plusplus.python.miniwob import action
+from a2perf.domains.web_navigation.gwob.miniwob_plusplus.python.miniwob import environment
+from a2perf.domains.web_navigation.gwob.miniwob_plusplus.python.miniwob import reward
+from a2perf.domains.web_navigation.gwob.miniwob_plusplus.python.miniwob import state
 
 # See https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/text
 INPUT_ELEMENTS = (

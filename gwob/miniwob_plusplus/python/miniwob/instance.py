@@ -15,15 +15,15 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
-from rl_perf.domains.web_nav.gwob.miniwob_plusplus.python.miniwob.fields import \
+from a2perf.domains.web_navigation.gwob.miniwob_plusplus.python.miniwob.fields import \
   Fields
-from rl_perf.domains.web_nav.gwob.miniwob_plusplus.python.miniwob.fields import \
+from a2perf.domains.web_navigation.gwob.miniwob_plusplus.python.miniwob.fields import \
   get_field_extractor
-from rl_perf.domains.web_nav.gwob.miniwob_plusplus.python.miniwob.reward import \
+from a2perf.domains.web_navigation.gwob.miniwob_plusplus.python.miniwob.reward import \
   get_original_reward
-from rl_perf.domains.web_nav.gwob.miniwob_plusplus.python.miniwob.screenshot import \
+from a2perf.domains.web_navigation.gwob.miniwob_plusplus.python.miniwob.screenshot import \
   get_screenshot
-from rl_perf.domains.web_nav.gwob.miniwob_plusplus.python.miniwob.state import \
+from a2perf.domains.web_navigation.gwob.miniwob_plusplus.python.miniwob.state import \
   MiniWoBState
 
 

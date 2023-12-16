@@ -20,10 +20,10 @@ import time
 from absl import app
 from absl import flags
 from absl import logging
-from rl_perf.domains.web_nav.gwob.CoDE import test_websites
-from rl_perf.domains.web_nav.gwob.CoDE import utils
-from rl_perf.domains.web_nav.gwob.CoDE import vocabulary_node
-from rl_perf.domains.web_nav.gwob.CoDE import web_environment
+from a2perf.domains.web_navigation.gwob.CoDE import test_websites
+from a2perf.domains.web_navigation.gwob.CoDE import utils
+from a2perf.domains.web_navigation.gwob.CoDE import vocabulary_node
+from a2perf.domains.web_navigation.gwob.CoDE import web_environment
 
 
 flags.DEFINE_string("data_dep_path", None,

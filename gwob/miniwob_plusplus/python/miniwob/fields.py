@@ -912,7 +912,7 @@ def extract_utterances():
         print('Usage: {} task_name'.format(sys.argv[0]), file=sys.stderr)
         exit(1)
     FIELD_EXTRACTORS[task_name] = lambda utt: Fields({})
-    from rl_perf.domains.web_nav.gwob.miniwob_plusplus.python.miniwob.environment import MiniWoBEnvironment
+    from a2perf.domains.web_navigation.gwob.miniwob_plusplus.python.miniwob.environment import MiniWoBEnvironment
     env = MiniWoBEnvironment(task_name)
     base_url = os.environ.get('MINIWOB_BASE_URL')
     env.configure(num_instances=4, seeds=list(range(4)), base_url=base_url)

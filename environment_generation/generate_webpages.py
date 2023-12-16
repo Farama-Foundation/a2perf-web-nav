@@ -7,8 +7,8 @@ import numpy as np
 from absl import app
 from absl import flags
 
-from rl_perf.domains.web_nav.environment_generation import website_util
-from rl_perf.domains.web_nav.gwob.CoDE import web_primitives
+from a2perf.domains.web_navigation.environment_generation import website_util
+from a2perf.domains.web_navigation.gwob.CoDE import web_primitives
 
 flags.DEFINE_integer(
     'num_difficulty_levels', 10, 'Number of difficulty levels to generate.'

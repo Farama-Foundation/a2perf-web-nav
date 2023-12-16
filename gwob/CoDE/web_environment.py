@@ -23,10 +23,10 @@ import numpy as np
 from absl import logging
 from selenium.common.exceptions import JavascriptException
 
-from rl_perf.domains.web_nav.gwob.CoDE import base_web_environment
-from rl_perf.domains.web_nav.gwob.CoDE import web_primitives
-from rl_perf.domains.web_nav.gwob.CoDE.utils import get_dom_elements
-from rl_perf.domains.web_nav.gwob.miniwob_plusplus.python.miniwob.action import MiniWoBTerminate
+from a2perf.domains.web_navigation.gwob.CoDE import base_web_environment
+from a2perf.domains.web_navigation.gwob.CoDE import web_primitives
+from a2perf.domains.web_navigation.gwob.CoDE.utils import get_dom_elements
+from a2perf.domains.web_navigation.gwob.miniwob_plusplus.python.miniwob.action import MiniWoBTerminate
 
 
 class AddPrimitiveError(base_web_environment.BaseJavascriptError):

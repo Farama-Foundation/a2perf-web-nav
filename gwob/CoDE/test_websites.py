@@ -17,7 +17,7 @@
 
 import json
 
-from rl_perf.domains.web_nav.gwob.CoDE import web_primitives
+from a2perf.domains.web_navigation.gwob.CoDE import web_primitives
 import gin
 
 
