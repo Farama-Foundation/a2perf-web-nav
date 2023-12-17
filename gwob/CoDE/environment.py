@@ -1,10 +1,11 @@
+import json
 import os
-import pickle
+import zipfile
 
 import gin
+from absl import logging
 
 from a2perf.domains.web_navigation.environment_generation import website_util
-from a2perf.domains.web_navigation.gwob.CoDE import vocabulary_node
 from a2perf.domains.web_navigation.gwob.CoDE import web_environment
 
 
@@ -24,7 +25,7 @@ class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
     super().__init__(seed=seed, global_vocabulary=global_vocabulary, **kwargs)
     self.data_dir = data_dir
     self.difficulty = difficulty
-    self.browser_kwargs = kwargs['kwargs_dict']
+    self.browser_kwargs = kwargs['browser_args']
 
     if designs is None:
       self._designs = self._load_designs(self.difficulty)
@@ -55,13 +56,26 @@ class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
 
   def _load_designs(self, difficulty):
     """Load the designs for the corresponding difficulty level."""
-    design_path = os.path.join(self.data_dir, f'design_{difficulty}.pkl')
+    design_path = os.path.join(self.data_dir, f'{difficulty:02d}.json')
     if not os.path.isfile(design_path):
-      raise ValueError(f'No design file found for difficulty {difficulty}')
-    # return np.load(design_path, allow_pickle=True)
-    # load the design path using pickle
-    with open(design_path, 'rb') as f:
-      return pickle.load(f)
+      logging.info('Could not find %s', design_path)
+      zip_path = os.path.join(self.data_dir, 'difficulty_levels.zip')
+      if not os.path.isfile(zip_path):
+        raise FileNotFoundError(f'Could not find {zip_path}')
+
+      with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+        # Unzip the files here since we may not have writer permissions
+        tmp_dir = os.path.join(os.path.expanduser('~'), '.web_navigation')
+        os.makedirs(tmp_dir, exist_ok=True)
+        logging.info('Unzipping website design files to %s', tmp_dir)
+        zip_ref.extractall(tmp_dir)
+
+        # After unzipping, the data directory should change
+        self.data_dir = tmp_dir
+
+    # load the design path using JSON
+    with open(design_path, 'r') as f:
+      return json.load(f)
 
   def _sample_design(self):
     """Sample a design from the design space."""

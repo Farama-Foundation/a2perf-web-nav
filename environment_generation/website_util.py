@@ -1,8 +1,5 @@
-import gin
 import numpy as np
 
-from a2perf.domains.web_navigation.gwob.CoDE import vocabulary_node
-from a2perf.domains.web_navigation.gwob.CoDE import web_environment
 from a2perf.domains.web_navigation.gwob.CoDE import web_primitives
 
 PASSIVE_PRIMITIVES = [
@@ -120,7 +117,7 @@ class Primitive(object):
 class Website(object):
   """A website is a sequence of pages."""
 
-  def __init__(self, first_page=None, design=None):
+  def __init__(self, design=None, first_page=None, ):
     self._pages = []
     self.difficulty = 0
     self._num_possible_correct_steps = 0

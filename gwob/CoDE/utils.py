@@ -59,13 +59,13 @@ COMMON_ELEMENTS = ("button", "label", "select")
 ADDITIONAL_ELEMENTS = ("a", "img", "div", "span")
 
 
-def create_environment(subdomain, base_url, random_state, kwargs_dict):
+def create_environment(subdomain, base_url, random_state, browser_args):
     """Create a miniwob environment with subdomain.
 
     Args:
       subdomain: Name of the environment.
       base_url: Base url that shows the location of the envionment resources.
-      kwargs_dict: Additional arguments that are passed to environment
+      browser_args: Additional arguments that are passed to environment
         configuration.
 
     Returns:
@@ -78,7 +78,7 @@ def create_environment(subdomain, base_url, random_state, kwargs_dict):
         seeds=[random_state.randint(0, 1000)],
         base_url=base_url,
         reward_processor=reward.get_raw_reward,
-        **kwargs_dict)
+        **browser_args)
     return env
 
 

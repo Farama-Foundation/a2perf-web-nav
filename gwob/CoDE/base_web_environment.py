@@ -90,7 +90,7 @@ class WebEnvironment(gym.Env):
       generate_screenshots=False,
       global_vocabulary=None,
       # Kwargs for WoB Env.
-      kwargs_dict=None,
+      browser_args=None,
       seed=None, ):
     """Initialize a web environment.
 
@@ -156,7 +156,7 @@ class WebEnvironment(gym.Env):
       generate_screenshots: If true, screenshots for each state will be
         generated. These can be written into a file afterwards.
       global_vocabulary: Global vocabulary node for distributed env.
-      kwargs_dict: Key-value args to be passed to the WoB environment
+      browser_args: Key-value args to be passed to the WoB environment
         constructor. Also useful to specify arguments to chromedriver such as
         'headless'.
 
@@ -164,7 +164,7 @@ class WebEnvironment(gym.Env):
       ValueError: if typing from profile and number of fields is not given or
         temporal discount is outside of [0, 1].
     """
-    logging.info('kwargs passes to wob environment : %s', str(kwargs_dict))
+    logging.info('kwargs passes to wob environment : %s', str(browser_args))
     # create wob environment
     self.subdomain = subdomain
     self._step_limit = step_limit
@@ -174,7 +174,7 @@ class WebEnvironment(gym.Env):
     self.base_url = base_url
     self._wob_env = utils.create_environment(subdomain, base_url,
                                              random_state=self._random,
-                                             kwargs_dict=kwargs_dict)
+                                             browser_args=browser_args)
     # 5 main attributes: tag, value, text, placeholder, class, [name]
     self.number_of_dom_attributes = 5
     # The global vocabulary is wrapped with a client.Client class. Creating the
@@ -207,7 +207,7 @@ class WebEnvironment(gym.Env):
     self.gminiwob_unrequired_complexity = gminiwob_unrequired_complexity
     self.use_potential_based_reward = use_potential_based_reward
     self.generate_screenshots = generate_screenshots
-    if kwargs_dict['threading'] and (
+    if browser_args['threading'] and (
         gminiwob_required_complexity != 'original' or
         gminiwob_unrequired_complexity != 'original'):
       raise ValueError(

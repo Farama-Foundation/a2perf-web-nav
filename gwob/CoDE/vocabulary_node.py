@@ -14,15 +14,16 @@
 # limitations under the License.
 
 """A global vocabulary."""
+import multiprocessing
 import threading
 import typing
+from multiprocessing.managers import DictProxy
 from typing import Union
 
-from absl import logging
+import gin
 
 Number = Union[int, float]
 VocabularyElement = Union[str, Number]
-import multiprocessing
 
 
 class Error(Exception):
@@ -45,9 +46,7 @@ class Vocabulary():
         is self-referential for the leader.
       max_vocabulary_size: The maximum size for the vocabulary.
     """
-    # Local nodes will have this set. The global node will set to None.
     self._global_vocab_node = global_vocab_node
-
     self._max_vocabulary_size = max_vocabulary_size
 
     # The child's local view of the vocabulary. For the leader, this is the
@@ -85,13 +84,8 @@ class Vocabulary():
     Returns:
       The updated vocabulary.
     """
-    if not words_to_add:
-      self._local_vocab = dict(self.get_global_vocabulary())
-      return self._local_vocab
-
-    with self._global_vocab_node._lock:
-      self._local_vocab = dict(
-          self._global_vocab_node.add_to_vocabulary(words_to_add))
+    self._local_vocab = dict(
+        self._global_vocab_node.add_to_vocabulary(words_to_add))
     return self._local_vocab
 
   def get_global_vocabulary(self):
@@ -108,16 +102,13 @@ class Vocabulary():
     self._local_vocab = self._global_vocab_node.get_global_vocabulary()
 
 
-class LockedVocabulary(Vocabulary):
-  def __init__(self, multiprocessing_manager, max_vocabulary_size=15000,
-  ):
-    self._lock = multiprocessing_manager.Lock()
-    self._max_vocabulary_size = max_vocabulary_size
-    self._local_vocab = multiprocessing_manager.dict()
-    self._next_index = 0
-
+class DistributedVocabulary(Vocabulary):
+  def __init__(self, max_vocabulary_size=15000):
+    self._local_vocab = {}
     super().__init__(global_vocab_node=self,
                      max_vocabulary_size=max_vocabulary_size)
+    self.lock = None
+    self._next_index = 0
 
   def add_to_vocabulary(
       self,
@@ -134,27 +125,56 @@ class LockedVocabulary(Vocabulary):
       VocabularyOverflowError: Raised when the vocabulary has exceeded its max
         size.
     """
-    for word in words_to_add:
-      if word not in self._local_vocab:
-        if len(self._local_vocab) >= self._max_vocabulary_size:
-          raise VocabularyOverflowError(
-              'Vocabulary size exceeded max size of {}.'.format(
-                  self._max_vocabulary_size))
-        self._local_vocab[word] = self._next_index
-        self._next_index += 1
+    with self.lock:
+      for word in words_to_add:
+        if word not in self._local_vocab:
+          if len(self._local_vocab) >= self._max_vocabulary_size:
+            raise VocabularyOverflowError(
+                'Vocabulary size exceeded max size of {}.'.format(
+                    self._max_vocabulary_size))
+          self._local_vocab[word] = self._next_index
+          self._next_index += 1
     return self._local_vocab
 
   def get_global_vocabulary(self):
-    """Return the global vocabulary."""
+    """Returns the global vocabulary. Distributed vocabularies are the leader."""
     return self._local_vocab
+
+  def save(self):
+    return self._local_vocab
+
+  def restore(self, state: Union[dict, DictProxy]):
+    self._local_vocab = state
+    max_index = max(
+        self._local_vocab.values()) + 1 if self._local_vocab else 0
+    self._next_index = max_index
+
+
+@gin.configurable
+class LockedMultiprocessingVocabulary(DistributedVocabulary):
+  def __init__(self, multiprocessing_manager=None, max_vocabulary_size=15000,
+  ):
+    super().__init__(max_vocabulary_size=max_vocabulary_size)
+    multiprocessing_manager = multiprocessing_manager or multiprocessing.Manager()
+    self.lock = multiprocessing_manager.Lock()
+    self._max_vocabulary_size = max_vocabulary_size
+    self._local_vocab = multiprocessing_manager.dict()
+    self._next_index = 0
 
   def save(self) -> typing.Dict[str, int]:
     """Overridden abstract method for saving the LockedVocabulary object."""
     return dict(self._local_vocab)
 
-  def restore(self, state: multiprocessing.Manager().dict()):
+  def restore(self, state: DictProxy):
     """Overridden abstract method for restoring the LockedVocabulary object."""
-    self._local_vocab = state
-    self._global_vocab_node = self
-    max_index = max(self._local_vocab.values()) + 1 if self._local_vocab else 0
-    self._next_index = max_index
+
+    if not isinstance(state, DictProxy):
+      raise ValueError('State must be a multiprocessing.Manager.dict object.')
+
+    super().restore(state)
+
+
+class LockedThreadedVocabulary(DistributedVocabulary):
+  def __init__(self, threading_lock=None, max_vocabulary_size=15000):
+    super().__init__(max_vocabulary_size=max_vocabulary_size)
+    self.lock = threading_lock or threading.Lock()

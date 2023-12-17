@@ -54,12 +54,12 @@ def run_policy_on_shopping_website():
       number_of_dom_elements=150,
       dom_attribute_sequence_length=5,
       keyboard_action_size=5,
-      kwargs_dict={
+      browser_args={
           "headless": FLAGS.run_headless_mode,
           "threading": False
       },
       step_limit=25,
-      global_vocabulary=vocabulary_node.LockedVocabulary(),
+      global_vocabulary=vocabulary_node.LockedMultiprocessingVocabulary(),
       use_conceptual=FLAGS.use_conceptual)
 
   # Create a shopping website design with difficulty = 3.
