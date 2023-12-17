@@ -15,15 +15,15 @@ data_dir = os.path.join(os.path.dirname(__file__), 'environment_generation',
 
 gin.parse_config_files_and_bindings([config_file_path], None,
                                     finalize_config=False)
-# gin.parse_config(f'environment.WebNavigationEnv.data_dir = "{data_dir}"')
 gym.envs.register(
     id='WebNavigation-v0',
     entry_point='a2perf.domains.web_navigation.gwob.CoDE.environment:WebNavigationEnv',
     apply_api_compatibility=True,
+    disable_env_checker=True,
     kwargs=dict(data_dir=data_dir, base_url=base_url)
 )
 
-# Some DeepRL frameworks still use the legacy gym interface, so we register the environment there as well.
+# Some RL frameworks still use the legacy gym interface, so we register the environment there as well.
 legacy_gym.envs.register(
     id='WebNavigation-v0',
     entry_point='a2perf.domains.web_navigation.gwob.CoDE.environment:WebNavigationEnv',

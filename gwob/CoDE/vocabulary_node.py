@@ -34,7 +34,17 @@ class VocabularyOverflowError(Error):
   """Raised when the vocabulary has overflowed its max word count."""
 
 
-class Vocabulary():
+@gin.configurable
+def create_locked_vocab(*args, **kwargs):
+  mp_vocab = kwargs.get('multiprocessing', False)
+  kwargs.pop('multiprocessing', None)
+  if mp_vocab:
+    return LockedMultiprocessingVocabulary(*args, **kwargs)
+  else:
+    return LockedThreadedVocabulary(*args, **kwargs)
+
+
+class Vocabulary(object):
   """A child of a global LockedVocabulary object."""
 
   def __init__(self, global_vocab_node,
@@ -105,8 +115,8 @@ class Vocabulary():
 class DistributedVocabulary(Vocabulary):
   def __init__(self, max_vocabulary_size=15000):
     self._local_vocab = {}
-    super().__init__(global_vocab_node=self,
-                     max_vocabulary_size=max_vocabulary_size)
+    super(DistributedVocabulary, self).__init__(global_vocab_node=self,
+                                                max_vocabulary_size=max_vocabulary_size)
     self.lock = None
     self._next_index = 0
 
@@ -150,11 +160,11 @@ class DistributedVocabulary(Vocabulary):
     self._next_index = max_index
 
 
-@gin.configurable
 class LockedMultiprocessingVocabulary(DistributedVocabulary):
   def __init__(self, multiprocessing_manager=None, max_vocabulary_size=15000,
   ):
-    super().__init__(max_vocabulary_size=max_vocabulary_size)
+    super(LockedMultiprocessingVocabulary, self).__init__(
+        max_vocabulary_size=max_vocabulary_size)
     multiprocessing_manager = multiprocessing_manager or multiprocessing.Manager()
     self.lock = multiprocessing_manager.Lock()
     self._max_vocabulary_size = max_vocabulary_size
@@ -171,10 +181,11 @@ class LockedMultiprocessingVocabulary(DistributedVocabulary):
     if not isinstance(state, DictProxy):
       raise ValueError('State must be a multiprocessing.Manager.dict object.')
 
-    super().restore(state)
+    super(LockedMultiprocessingVocabulary, self).restore(state)
 
 
 class LockedThreadedVocabulary(DistributedVocabulary):
   def __init__(self, threading_lock=None, max_vocabulary_size=15000):
-    super().__init__(max_vocabulary_size=max_vocabulary_size)
+    super(LockedThreadedVocabulary, self).__init__(
+        max_vocabulary_size=max_vocabulary_size)
     self.lock = threading_lock or threading.Lock()
