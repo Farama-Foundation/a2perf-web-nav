@@ -8,6 +8,12 @@ from absl import logging
 from a2perf.domains.web_navigation.environment_generation import website_util
 from a2perf.domains.web_navigation.gwob.CoDE import web_environment
 
+import numpy as np
+
+EASY_BOUNDS = (-np.inf, 1.11629239),
+MEDIUM_BOUNDS = (1.11629239, 3.53913304),
+HARD_BOUNDS = (3.53913304, np.inf),
+
 
 @gin.configurable('WebNavigationEnv')
 class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
@@ -17,6 +23,7 @@ class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
       self,
       seed,
       data_dir,
+      num_websites=1,
       difficulty=None,
       designs=None,
       global_vocabulary=None,
@@ -25,16 +32,20 @@ class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
     super().__init__(seed=seed, global_vocabulary=global_vocabulary, **kwargs)
     self.data_dir = data_dir
     self.difficulty = difficulty
+    self.num_websites = num_websites
     self.browser_kwargs = kwargs['browser_args']
     assert (designs is None) != (difficulty is None), (
         'Either designs or difficulty must be specified, but not both.')
 
-    self._designs = []
     if designs is None:
+      assert 1 <= difficulty <= 3, 'Difficulty must be between 1 and 3.'
       designs = self._load_designs(self.difficulty)
 
-    for design in designs:
-      self._designs.append(website_util.Website(design=design))
+    self._designs = designs
+
+    # Randomly sample num_websites websites from the designs
+    self._designs = self._random.choice(a=self._designs, size=self.num_websites,
+                                        replace=False)
 
     self._current_design = None
     self._prev_obs = None
@@ -57,6 +68,8 @@ class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
 
   def _load_designs(self, difficulty):
     """Load the designs for the corresponding difficulty level."""
+
+    # Load the designs file
     design_path = os.path.join(self.data_dir,
                                f'{difficulty:02d}.json')
     if not os.path.isfile(design_path):
@@ -93,4 +106,4 @@ class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
   def _sample_design(self):
     """Sample a design from the design space."""
     website = self._random.choice(self._designs)
-    return website.to_design()
+    return website
