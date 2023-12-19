@@ -1,7 +1,7 @@
 from a2perf.domains.web_navigation.gwob.CoDE import environment
 from a2perf.domains.web_navigation.gwob.CoDE import vocabulary_node
 
-environment.WebNavigationEnv.difficulty=1
+#environment.WebNavigationEnv.difficulty=1
 environment.WebNavigationEnv.seed=0
 environment.WebNavigationEnv.subdomain="gminiwob.generic_website"
 environment.WebNavigationEnv.profile_length=10

@@ -323,6 +323,7 @@ class WebLSTMValueNetwork(network.Network):
 
   def call(self, observation, step_type=None, network_state=(), training=False):
     batch_squash = None
+    outer_rank = None
     if self._batch_squash:
       outer_rank = tf_agents.utils.nest_utils.get_outer_rank(
           observation, self.input_tensor_spec)
@@ -330,9 +331,9 @@ class WebLSTMValueNetwork(network.Network):
       observation = tf.nest.map_structure(batch_squash.flatten, observation)
 
     # Pass input through LSTM
-    state = self._lstm_encoder(observation=observation,
+    state = self._lstm_encoder(inputs=observation,
                                training=training,
-                               )
+                               outer_rank=outer_rank)
 
     # Get the value prediction for each observation
     output_value = tf.nest.map_structure(self._postprocessing_layers, state)
@@ -401,11 +402,11 @@ class WebLSTMCategoricalProjectionNetwork(network.DistributionNetwork):
         dtype=sample_spec.dtype)
 
   def call(self, inputs, *args, **kwargs):
-
     # outer_rank is needed because the projection is not done on the raw
     # observations so getting the outer rank is hard as there is no spec to
     # compare to.
-    outer_rank = kwargs.get('outer_rank')
+    outer_rank = kwargs.get('outer_rank', None)
+    mask = kwargs.get('mask', None)
     if outer_rank is None:
       raise ValueError("outer_rank not provided")
     batch_squash = utils.BatchSquash(outer_rank)
@@ -479,7 +480,7 @@ class WebLSTMActorDistributionNetwork(network.DistributionNetwork):
 
     def call_projection_net(proj_net):
       distribution, _ = proj_net(
-          observation, outer_rank, training=training, mask=mask)
+          observation, outer_rank=outer_rank, training=training, mask=mask)
       return distribution
 
     output_actions = tf.nest.map_structure(
@@ -538,9 +539,13 @@ class WebLSTMQNetwork(network.Network):
   def call(self, inputs, *args, **kwargs):
     observation = inputs
     training = kwargs.get('training', False)
+    mask = kwargs.get('mask', None)
+    outer_rank = kwargs.get('outer_rank', None)
     network_state = kwargs.get('network_state', ())
     profile_encoding, dom_encoding = self._lstm_encoder(inputs=observation,
-                                                        training=training)
+                                                        training=training,
+                                                        outer_rank=outer_rank,
+                                                        mask=mask)
 
     q_values_joint = tf.reduce_sum(
         tf.expand_dims(dom_encoding, axis=1) *

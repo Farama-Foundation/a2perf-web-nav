@@ -11,7 +11,7 @@ base_url = f'file://{base_url_path}/'
 
 # Add a default data directory to the gin config
 data_dir = os.path.join(os.path.dirname(__file__), 'environment_generation',
-                        'data')
+                        'data', 'difficulty_levels')
 
 gin.parse_config_files_and_bindings([config_file_path], None,
                                     finalize_config=False)

@@ -154,10 +154,11 @@ class DistributedVocabulary(Vocabulary):
     return self._local_vocab
 
   def restore(self, state: Union[dict, DictProxy]):
-    self._local_vocab = state
-    max_index = max(
-        self._local_vocab.values()) + 1 if self._local_vocab else 0
-    self._next_index = max_index
+    with self.lock:
+      self._local_vocab.update(state)
+      max_index = max(
+          self._local_vocab.values()) + 1 if self._local_vocab else 0
+      self._next_index = max_index
 
 
 class LockedMultiprocessingVocabulary(DistributedVocabulary):
@@ -174,14 +175,6 @@ class LockedMultiprocessingVocabulary(DistributedVocabulary):
   def save(self) -> typing.Dict[str, int]:
     """Overridden abstract method for saving the LockedVocabulary object."""
     return dict(self._local_vocab)
-
-  def restore(self, state: DictProxy):
-    """Overridden abstract method for restoring the LockedVocabulary object."""
-
-    if not isinstance(state, DictProxy):
-      raise ValueError('State must be a multiprocessing.Manager.dict object.')
-
-    super(LockedMultiprocessingVocabulary, self).restore(state)
 
 
 class LockedThreadedVocabulary(DistributedVocabulary):
