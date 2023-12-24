@@ -1,5 +1,4 @@
-#ARG BASE_IMAGE="nvcr.io/nvidia/driver:535-5.15.0-1040-nvidia-ubuntu22.04"
-ARG BASE_IMAGE="nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04"
+ARG BASE_IMAGE="nvidia/cuda:11.8.0-cudnn8-devel-ubuntu20.04"
 FROM $BASE_IMAGE
 
 
