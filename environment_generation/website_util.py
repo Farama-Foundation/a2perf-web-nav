@@ -1,6 +1,7 @@
 import numpy as np
 
 from a2perf.domains.web_navigation.gwob.CoDE import web_primitives
+from absl import app
 
 PASSIVE_PRIMITIVES = [
     'carousel',
@@ -251,5 +252,22 @@ def generate_primitive(primitive_name, primitive_id):
   )
 
 
+def main(_):
+  import gymnasium as gym
+
+  env = gym.make(id='WebNavigation-v0', difficulty=1,
+      browser_args=dict(
+          threading=False,
+          chrome_options={
+              # '--headless',
+              '--disable-gpu',
+              '--disable-dev-shm-usage',
+              '--no-sandbox',
+          }
+      ))
+
+  env.reset()
+
+
 if __name__ == '__main__':
-  pass
+  app.run(main)
