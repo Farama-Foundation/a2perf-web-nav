@@ -1,117 +1,75 @@
+# Base Image
 ARG BASE_IMAGE="nvidia/cuda:11.8.0-cudnn8-devel-ubuntu20.04"
 FROM $BASE_IMAGE
 
-
-ARG APT_COMMAND="apt-get -o Acquire::Retries=3 -y"
-ARG USER_ID
-ARG USER_GROUP_ID
-ENV DEBIAN_FRONTEND=noninteractive
-
-RUN ${APT_COMMAND} update && ${APT_COMMAND} install -y wget \
-    sudo \
-    build-essential \
-    checkinstall\
-    zlib1g \
-    zlib1g-dev \
-    libssl-dev\
-    libffi-dev\
-    libbz2-dev \
-    libsdl-image1.2-dev \
-    libsdl-mixer1.2-dev \
-    libsdl-ttf2.0-dev \
-    libsdl1.2-dev \
-    libsmpeg-dev \
-    subversion \
-    libportmidi-dev \
-    ffmpeg \
-    libswscale-dev \
-    libavformat-dev \
-    libavcodec-dev \
-    libfreetype6-dev \
-    libopenblas-dev
-
-# Install dependencies
-# add deadsnakes ppa then install python3.8
-
-RUN ${APT_COMMAND} update && \
-    ${APT_COMMAND} install software-properties-common && \
-    add-apt-repository -y ppa:deadsnakes/ppa && \
-    ${APT_COMMAND} update && \
-    ${APT_COMMAND} install python3.8 python3.8-distutils python3.8-dev python3.8-venv && \
-    ${APT_COMMAND} clean && \
-    rm -rf /var/lib/apt/lists/* && \
-    update-alternatives --install /usr/bin/python python /usr/bin/python3.8 1
-
-
-# remove old python3 symlink and recreate it pointing to python3.8
-RUN rm /usr/bin/python3
-RUN ln -s /usr/bin/python3.8 /usr/bin/python3
-
-# Install python3 pip
-RUN wget https://bootstrap.pypa.io/get-pip.py
-RUN python3.8 get-pip.py
-
-RUN ${APT_COMMAND} update && ${APT_COMMAND} install -y \
-    xvfb \
-    unzip \
-    subversion \
-    x11-apps \
-    htop \
-    curl \
-    vim \
-    git \
-    tmux \
-    mesa-utils \
-    libcanberra-gtk-module \
-    libcanberra-gtk3-module \
-    openssh-server \
-    ssh \
-    dbus \
-    dbus-x11 \
-    notification-daemon
-
-
-
+# Environment Variables
+ARG APT_COMMAND="apt-get -o Acquire::Retries=3 --no-install-recommends -y"
+ARG USER_ID=1000
+ARG USER_GROUP_ID=1000
 ARG CHROME_VERSION="114.0.5735.90-1"
 ARG CHROMEDRIVER_VERSION="114.0.5735.90"
-RUN wget --no-verbose -O /tmp/chrome.deb https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_${CHROME_VERSION}_amd64.deb \
-  && apt install -y /tmp/chrome.deb \
-  && rm /tmp/chrome.deb
-RUN wget --no-verbose -O /tmp/chromedriver.zip https://chromedriver.storage.googleapis.com/${CHROMEDRIVER_VERSION}/chromedriver_linux64.zip \
-  && unzip /tmp/chromedriver.zip -d /usr/bin \
-  && rm /tmp/chromedriver.zip \
-  && chmod 755 /usr/bin/chromedriver
-ENV PATH=$PATH:/usr/bin/chromedriver
+ENV DEBIAN_FRONTEND=noninteractive
 
-# Enable X11 forwarding for docker
-RUN echo "X11UseLocalhost no" >> /etc/ssh/sshd_config && \
-    echo "X11DisplayOffset 10" >> /etc/ssh/sshd_config && \
-    echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config
+# Add the Deadsnakes PPA for Python 3.10 and Package Installation
+RUN ${APT_COMMAND} update && \
+    ${APT_COMMAND} install software-properties-common && \
+    add-apt-repository ppa:deadsnakes/ppa && \
+    ${APT_COMMAND} update && \
+    ${APT_COMMAND} upgrade && \
+    ${APT_COMMAND} install --allow-change-held-packages python3.10 python3.10-dev python3.10-venv python3.10-distutils wget sudo build-essential ssh openssh-server libnss3 dbus dbus-x11 unzip x11-apps x11-utils libcudnn8 libcudnn8-dev && \
+    rm -rf /var/lib/apt/lists/*
 
-# Add User for safely using mpi4py
-RUN groupadd -g $USER_GROUP_ID user_group
-RUN groupadd -g 998 docker
+# Install pip for Python 3.10
+RUN wget https://bootstrap.pypa.io/get-pip.py && \
+    python3.10 get-pip.py && \
+    rm get-pip.py
 
-RUN useradd -u $USER_ID -g $USER_GROUP_ID -G 998 -ms /bin/bash user
+# Update Python Alternatives to use Python 3.10 as the default
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1 && \
+    update-alternatives --set python /usr/bin/python3.10
 
-# Granting sudo privileges
-RUN usermod -aG sudo user
-RUN echo "user:password" | chpasswd
-RUN echo "user ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+# Chrome Installation
+RUN wget --no-verbose -O /tmp/chrome.deb https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_${CHROME_VERSION}_amd64.deb && \
+    ${APT_COMMAND} update && \
+    ${APT_COMMAND} --fix-broken install && \
+    ${APT_COMMAND} install /tmp/chrome.deb && \
+    rm /tmp/chrome.deb
 
-RUN mkdir /home/user/.ssh
-RUN chmod 700 /home/user/.ssh
-RUN touch /home/user/.ssh/authorized_keys
-RUN chmod 600 /home/user/.ssh/authorized_keys
-ADD .ssh/id_rsa.pub /home/user/.ssh/authorized_keys
-
-# Add /home/user/.local/bin to PATH
-ENV PATH="/home/user/.local/bin:${PATH}"
-
-RUN echo "Port 2020" >> /etc/ssh/sshd_config
+# SSH and X11 Configuration
+RUN echo "X11UseLocalhost no\nX11DisplayOffset 10\nPasswordAuthentication yes\nPort 2020" >> /etc/ssh/sshd_config && \
+    mkdir /run/sshd
 EXPOSE 2020
 
+# User Creation
+RUN groupadd -g $USER_GROUP_ID user_group && \
+    groupadd -g 998 docker && \
+    useradd -u $USER_ID -g $USER_GROUP_ID -G 998 -ms /bin/bash user && \
+    usermod -aG sudo user && \
+    echo "user:password" | chpasswd && \
+    echo "user ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
+    mkdir -p /home/user/.ssh && \
+    chmod 700 /home/user/.ssh && \
+    touch /home/user/.ssh/authorized_keys && \
+    chmod 600 /home/user/.ssh/authorized_keys
 
+# Switch to User
 USER user
 
-ENTRYPOINT sudo service ssh restart && sudo service dbus restart && bash
+# Set Work Directory
+WORKDIR /home/user
+
+# Create and Activate a Virtual Environment
+RUN python3.10 -m venv venv && \
+    . venv/bin/activate && \
+    pip install --upgrade pip setuptools
+
+COPY .ssh/id_rsa.pub /home/user/.ssh/authorized_keys
+RUN sudo chown -R user:user_group /home/user
+
+# Set PATH to include the virtual environment's bin directory
+ENV PATH="/home/user/venv/bin:${PATH}"
+ENV PATH="/usr/local/cuda/bin:${PATH}"
+ENV LD_LIBRARY_PATH="/usr/local/cuda/lib64:${LD_LIBRARY_PATH}"
+
+# Entry Point
+ENTRYPOINT sudo service ssh start && sudo service dbus start && bash

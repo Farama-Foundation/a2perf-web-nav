@@ -1,19 +1,20 @@
-import socket
 import json
-import random
+import numpy as np
+import socket
 import time
 import traceback
 import urllib.parse
-from queue import Queue
-from threading import Thread
-
-import numpy as np
 from absl import logging
+from queue import Queue
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
+from threading import Thread
+
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 
 from a2perf.domains.web_navigation.gwob.miniwob_plusplus.python.miniwob.fields import \
   Fields
@@ -188,7 +189,9 @@ class MiniWoBInstance(Thread):
       for opt in self.chrome_options:
         options.add_argument(opt)
 
-    self.driver = webdriver.Chrome(options=options, )
+    service = Service(ChromeDriverManager().install())
+    self.driver = webdriver.Chrome(service=service,
+                                   options=options)
     self.driver.implicitly_wait(10)
     if headless:
       self.driver.get(self.url)
@@ -211,7 +214,6 @@ class MiniWoBInstance(Thread):
       logging.error('Error closing the driver of instance %d', self.index)
       traceback.print_exc()
     self.died = True
-    # assert 0 == 1
 
   def reset(self, states, seed):
     """Forces stop and start this instance.
