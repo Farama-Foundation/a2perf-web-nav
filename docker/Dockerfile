@@ -16,8 +16,30 @@ RUN ${APT_COMMAND} update && \
     add-apt-repository ppa:deadsnakes/ppa && \
     ${APT_COMMAND} update && \
     ${APT_COMMAND} upgrade && \
-    ${APT_COMMAND} install --allow-change-held-packages python3.10 python3.10-dev python3.10-venv python3.10-distutils wget sudo build-essential ssh openssh-server libnss3 dbus dbus-x11 unzip x11-apps x11-utils libcudnn8 libcudnn8-dev && \
+    ${APT_COMMAND} install --allow-change-held-packages \
+    python3.10 \
+    python3.10-dev  \
+    python3.10-venv  \
+    python3.10-distutils \
+    wget \
+    sudo \
+    build-essential  \
+    ssh \
+    openssh-server \
+    libnss3  \
+    dbus  \
+    dbus-x11 \
+    unzip  \
+    x11-apps  \
+    x11-utils \
+    libcudnn8  \
+    libcudnn8-dev && \
     rm -rf /var/lib/apt/lists/*
+
+# Add TensorRT
+RUN ${APT_COMMAND} update && \
+    ${APT_COMMAND} install python3-libnvinfer-dev \
+    python3-libnvinfer
 
 # Install pip for Python 3.10
 RUN wget https://bootstrap.pypa.io/get-pip.py && \

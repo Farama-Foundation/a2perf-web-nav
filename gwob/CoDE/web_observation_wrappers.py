@@ -359,7 +359,7 @@ def wrap_observation(obs, structured_field_extractor, num_steps, step_limit,
   """
   raw_profile = obs.utterance.strip()
   raw_profile = structured_field_extractor(raw_profile)
-  (profile_key, profile_value, profile_key_mask, profile_value_mask,
+  (profile_key, profile_value, profile_key_mask,  profile_value_mask,
    profile_mask) = wrap_structured_profile(raw_profile, local_vocabulary,
                                            profile_length, number_of_fields)
   dom, dom_features, action_mask, dom_mask = dom_representation(

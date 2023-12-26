@@ -33,7 +33,11 @@ class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
     self.data_dir = data_dir
     self.difficulty = difficulty
     self.num_websites = num_websites
-    self.browser_kwargs = kwargs['browser_args']
+    if kwargs is not None:
+      self.browser_kwargs = kwargs.get('browser_args', None)
+    else:
+      self.browser_kwargs = None
+
     assert (designs is None) != (difficulty is None), (
         'Either designs or difficulty must be specified, but not both.')
 

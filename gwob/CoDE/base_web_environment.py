@@ -34,7 +34,7 @@ from a2perf.domains.web_navigation.gwob.miniwob_plusplus.python.miniwob.action i
 from a2perf.domains.web_navigation.gwob.miniwob_plusplus.python.miniwob.fields import \
   get_field_extractor
 from a2perf.domains.web_navigation.gwob.miniwob_plusplus.python.miniwob.screenshot import \
-  get_screenshot
+  get_screenshot, pil_to_numpy_array
 
 
 class BaseJavascriptError(JavascriptException):
@@ -164,6 +164,8 @@ class WebEnvironment(gym.Env):
       ValueError: if typing from profile and number of fields is not given or
         temporal discount is outside of [0, 1].
     """
+    if browser_args is None:
+      browser_args = dict()
     logging.info('kwargs passes to wob environment : %s', str(browser_args))
     # create wob environment
     self.subdomain = subdomain
@@ -207,7 +209,9 @@ class WebEnvironment(gym.Env):
     self.gminiwob_unrequired_complexity = gminiwob_unrequired_complexity
     self.use_potential_based_reward = use_potential_based_reward
     self.generate_screenshots = generate_screenshots
-    if browser_args['threading'] and (
+
+    threading_arg = browser_args.get('threading', False)
+    if threading_arg and (
         gminiwob_required_complexity != 'original' or
         gminiwob_unrequired_complexity != 'original'):
       raise ValueError(
@@ -759,8 +763,21 @@ class WebEnvironment(gym.Env):
     """Generate a screenshot from current page."""
     self.screenshots.append(self.render())
 
-  def render(self):
+  def render(self, mode='image'):
     """Render current observation."""
-    return get_screenshot(self._wob_env.instances[0].driver,
-                          self._wob_env.instances[0].task_width,
-                          self._wob_env.instances[0].task_height)
+    screenshot = get_screenshot(self._wob_env.instances[0].driver,
+                                self._wob_env.instances[0].task_width,
+                                self._wob_env.instances[0].task_height)
+    if self._mode == 'test':
+      self.screenshots.append(screenshot)
+
+    if mode == 'human':
+      logging.error(
+          'Rendering in human mode is not supported since the browser should be visible.')
+    elif mode == 'rgb_array':
+      rgb_array = pil_to_numpy_array(screenshot)
+      return rgb_array
+    elif mode == 'image':
+      return screenshot
+    else:
+      raise ValueError('Mode {} is not supported.'.format(mode))

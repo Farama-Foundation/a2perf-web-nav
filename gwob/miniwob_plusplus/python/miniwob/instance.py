@@ -54,7 +54,7 @@ class MiniWoBInstance(Thread):
   FLIGHT_TASK_HEIGHT = 667
 
   def __init__(self, index, subdomain, seed,
-      base_url=None, cache_state=False, threading=True, chrome_options=None,
+      base_url=None, cache_state=False, threading=False, chrome_options=None,
       reward_processor=None, wait_ms=0., block_on_reset=True,
       refresh_freq=0, initial_mode='train'):
     """Starts a new Selenium WebDriver session.
@@ -175,7 +175,7 @@ class MiniWoBInstance(Thread):
       'Instance {} already has a driver'.format(self.index)
     options = webdriver.ChromeOptions()
 
-    headless = '--headless' in self.chrome_options
+    headless = self.chrome_options is not None and '--headless' in self.chrome_options
     if not headless:
       # custom window sizing if rendering
       options.add_argument('--use-gl=swiftshader')
