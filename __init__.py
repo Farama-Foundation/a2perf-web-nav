@@ -25,7 +25,7 @@ gym.envs.register(
     entry_point=(
         'a2perf.domains.web_navigation.gwob.CoDE.environment:WebNavigationEnv'
     ),
-    apply_api_compatibility=True,
+    apply_api_compatibility=False,
     disable_env_checker=True,
     kwargs=dict(data_dir=data_dir, base_url=base_url),
 )

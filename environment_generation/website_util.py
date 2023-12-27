@@ -487,8 +487,7 @@ class Page(object):
     prob_website_filled_out_correctly = (
         prob_all_active_primitives_match * prob_no_distracting_primitives_clicked
     )
-
-    self.difficulty = -np.log(prob_website_filled_out_correctly)
+    self.difficulty = -np.log(prob_website_filled_out_correctly + 1e-8)
     return self.difficulty
 
 
@@ -512,10 +511,10 @@ class Website(object):
       for i, (primitive_page_index, primitive_identifier) in enumerate(zip(
           design['action_page'], design['action']
       )):
-        if primitive_identifier not in web_primitives.CONCEPTS:
+        primitive_name = web_primitives.CONCEPTS[primitive_identifier]
+        if primitive_name not in web_primitives.CONCEPTS:
           raise ValueError(
               f"Invalid primitive identifier: {primitive_identifier}")
-        primitive_name = web_primitives.CONCEPTS[primitive_identifier]
         self._pages[primitive_page_index].add_primitive(
             Primitive(primitive_id=i, name=primitive_name))
 

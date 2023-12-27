@@ -2,3 +2,4 @@ gnureadline
 -r gwob/miniwob_plusplus/python/requirements.txt
 webdriver-manager
 selenium
+regex

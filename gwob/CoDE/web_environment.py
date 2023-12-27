@@ -71,6 +71,7 @@ class GMiniWoBWebEnvironment(base_web_environment.WebEnvironment):
       number_of_action_types=2,
       keyboard_action_size=5,
       # Env params.
+      render_mode='image',
       step_limit=6,
       cyclic_action_penalty=0.0,
       timestep_penalty=0.0,
@@ -104,6 +105,7 @@ class GMiniWoBWebEnvironment(base_web_environment.WebEnvironment):
     super().__init__(
         base_url=base_url,
         subdomain=subdomain,
+        render_mode=render_mode,
         profile_length=profile_length,
         number_of_fields=number_of_fields,
         use_only_profile_key=use_only_profile_key,
@@ -589,9 +591,13 @@ class GMiniWoBWebEnvironment(base_web_environment.WebEnvironment):
       if self.use_potential_based_reward:
         logging.info('Potential : %f', self.prev_potential)
 
+    truncated = self._num_steps >= self._step_limit
+    terminated = self.done or truncated
+
     # Return observation in numpy arrays.
     return self.wrap_observation(), np.array(
-        self.current_reward, np.float32), self.done, self.current_info
+        self.current_reward,
+        np.float32), terminated, truncated, self.current_info
 
   def close(self):
     """Close WoB Environment instances."""

@@ -14,8 +14,10 @@
 # limitations under the License.
 
 """Web Environment."""
+from __future__ import annotations
 
 import json
+from typing import Any
 
 import gin
 import gym.spaces as spaces
@@ -75,6 +77,7 @@ class WebEnvironment(gym.Env):
       exact_wob_reward=True,
       step_limit_reward=0.0,
       final_reward_bias=0.0,
+      render_mode='image',
       # General params.
       mode='train',
       verbose=False,
@@ -164,6 +167,7 @@ class WebEnvironment(gym.Env):
       ValueError: if typing from profile and number of fields is not given or
         temporal discount is outside of [0, 1].
     """
+    self.render_mode = render_mode
     if browser_args is None:
       browser_args = dict()
     logging.info('kwargs passes to wob environment : %s', str(browser_args))
@@ -395,7 +399,12 @@ class WebEnvironment(gym.Env):
               'Error in running createEnvironment(...) function in the environment: %s',
               str(e))
 
-  def reset(self, raw_state=False):
+  def reset(
+      self,
+      raw_state: bool = False,
+      seed: int | None = None,
+      options: dict[str, Any] | None = None,
+  ) -> tuple[ObsType, dict[str, Any]]:  # type: ignore
     """Reset the wob environment and other related fields in this class.
 
     The main purpose of the 'reset' function is to initialize all episode level
@@ -467,9 +476,9 @@ class WebEnvironment(gym.Env):
           self.number_of_fields, self.dom_attribute_sequence_length,
           self.number_of_dom_attributes, self.prev_refs,
           self.number_of_dom_elements, self.use_only_profile_key,
-          self.dom_profile_acted_list)
+          self.dom_profile_acted_list), self.current_info
     else:
-      return self._obs
+      return self._obs, self.current_info
 
   def step(self, action, raw_state=False):
     """Run the action in the WoB environment.
@@ -536,9 +545,13 @@ class WebEnvironment(gym.Env):
       if self.use_potential_based_reward:
         logging.info('Potential : %f', self.prev_potential)
 
+    terminated = self.done
+    truncated = self._num_steps >= self._step_limit
+
     # Return observation in numpy arrays.
     return self.wrap_observation(), np.array(
-        self.current_reward, np.float32), self.done, self.current_info
+        self.current_reward,
+        np.float32), terminated, truncated, self.current_info
 
   @property
   def utterance(self):
@@ -763,7 +776,7 @@ class WebEnvironment(gym.Env):
     """Generate a screenshot from current page."""
     self.screenshots.append(self.render())
 
-  def render(self, mode='image'):
+  def render(self):
     """Render current observation."""
     screenshot = get_screenshot(self._wob_env.instances[0].driver,
                                 self._wob_env.instances[0].task_width,
@@ -771,13 +784,13 @@ class WebEnvironment(gym.Env):
     if self._mode == 'test':
       self.screenshots.append(screenshot)
 
-    if mode == 'human':
+    if self.render_mode == 'human':
       logging.error(
           'Rendering in human mode is not supported since the browser should be visible.')
-    elif mode == 'rgb_array':
+    elif self.render_mode == 'rgb_array':
       rgb_array = pil_to_numpy_array(screenshot)
       return rgb_array
-    elif mode == 'image':
+    elif self.render_mode == 'image':
       return screenshot
     else:
-      raise ValueError('Mode {} is not supported.'.format(mode))
+      raise ValueError('Mode {} is not supported.'.format(self.render_mode))

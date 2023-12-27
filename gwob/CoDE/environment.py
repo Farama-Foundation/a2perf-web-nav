@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import json
 import os
 import zipfile
+from typing import Any
 
 import gin
 from absl import logging
@@ -9,10 +12,6 @@ from a2perf.domains.web_navigation.environment_generation import website_util
 from a2perf.domains.web_navigation.gwob.CoDE import web_environment
 
 import numpy as np
-
-EASY_BOUNDS = (-np.inf, 1.11629239),
-MEDIUM_BOUNDS = (1.11629239, 3.53913304),
-HARD_BOUNDS = (3.53913304, np.inf),
 
 
 @gin.configurable('WebNavigationEnv')
@@ -27,12 +26,15 @@ class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
       difficulty=None,
       designs=None,
       global_vocabulary=None,
+      render_mode='image',
       **kwargs,
   ):
-    super().__init__(seed=seed, global_vocabulary=global_vocabulary, **kwargs)
+    super().__init__(seed=seed, global_vocabulary=global_vocabulary,
+                     render_mode=render_mode, **kwargs)
     self.data_dir = data_dir
     self.difficulty = difficulty
     self.num_websites = num_websites
+    self.current_website = None
     if kwargs is not None:
       self.browser_kwargs = kwargs.get('browser_args', None)
     else:
@@ -55,19 +57,27 @@ class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
     self._prev_obs = None
 
   def step(self, action, raw_state=False):
-    obs, rew, done, info = super().step(action, raw_state=raw_state)
+    obs, rew, terminated, truncated, info = super().step(action,
+                                                         raw_state=raw_state)
     self._prev_obs = obs
-    return obs, rew, done, info
+    return obs, rew, terminated, truncated, info
 
-  def reset(self, raw_state=False):
+  def reset(
+      self,
+      raw_state: bool = False,
+      seed: int | None = None,
+      options: dict[str, Any] | None = None,
+  ) -> tuple[ObsType, dict[str, Any]]:  # type: ignore
     """Reset the environment."""
-    self._design_environment(env_design=self._sample_design())
+    design_to_use = self._sample_design()
+    self._design_environment(env_design=design_to_use)
     data = super().reset(raw_state=raw_state)
     return data
 
   def _design_environment(self, env_design):
     """Design the environment based` on the environment design."""
     self.current_design = env_design
+    self.current_website = website_util.Website(design=env_design)
     self.design_environment(env_design=env_design, auto_num_pages=True)
 
   def _load_designs(self, difficulty):
@@ -109,5 +119,5 @@ class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
 
   def _sample_design(self):
     """Sample a design from the design space."""
-    website = self._random.choice(self._designs)
-    return website
+    design = self._random.choice(self._designs)
+    return design
