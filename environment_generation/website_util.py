@@ -508,13 +508,14 @@ class Website(object):
     else:
       self._pages = [Page(page_id) for page_id in
                      range(design['number_of_pages'])]
-      for i, (primitive_page_index, primitive_identifier) in enumerate(zip(
+      for i, (primitive_page_index, primitive_name) in enumerate(zip(
           design['action_page'], design['action']
       )):
-        primitive_name = web_primitives.CONCEPTS[primitive_identifier]
         if primitive_name not in web_primitives.CONCEPTS:
           raise ValueError(
-              f"Invalid primitive identifier: {primitive_identifier}")
+              f"Invalid primitive: {primitive_name}. Must be one of "
+              f"{web_primitives.CONCEPTS}."
+          )
         self._pages[primitive_page_index].add_primitive(
             Primitive(primitive_id=i, name=primitive_name))
 

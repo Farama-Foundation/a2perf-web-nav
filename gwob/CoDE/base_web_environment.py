@@ -367,8 +367,6 @@ class WebEnvironment(gym.Env):
 
   def seed(self, seed=None):
     """Seeds internal random generator."""
-    if seed is None:
-      seed = np.random.randint(1000)
     self._random = np.random.RandomState(seed)
     return seed
 

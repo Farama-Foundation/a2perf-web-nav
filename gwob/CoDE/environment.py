@@ -4,14 +4,13 @@ import json
 import os
 import zipfile
 from typing import Any
+from typing import Optional
 
 import gin
 from absl import logging
 
 from a2perf.domains.web_navigation.environment_generation import website_util
 from a2perf.domains.web_navigation.gwob.CoDE import web_environment
-
-import numpy as np
 
 
 @gin.configurable('WebNavigationEnv')
@@ -20,13 +19,15 @@ class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
 
   def __init__(
       self,
-      seed,
-      data_dir,
-      num_websites=1,
-      difficulty=None,
-      designs=None,
+      seed: int,
+      data_dir: str,
+      num_websites: int = 1,
+      difficulty: Optional[int] = None,
+      designs: Optional[list[dict[str, Any]]] = None,
       global_vocabulary=None,
-      render_mode='image',
+      use_legacy_reset: bool = False,
+      use_legacy_step: bool = False,
+      render_mode: str = 'image',
       **kwargs,
   ):
     super().__init__(seed=seed, global_vocabulary=global_vocabulary,
@@ -35,19 +36,32 @@ class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
     self.difficulty = difficulty
     self.num_websites = num_websites
     self.current_website = None
+    self._use_legacy_reset = use_legacy_reset
+    self._use_legacy_step = use_legacy_step
     if kwargs is not None:
       self.browser_kwargs = kwargs.get('browser_args', None)
     else:
       self.browser_kwargs = None
 
-    assert (designs is None) != (difficulty is None), (
-        'Either designs or difficulty must be specified, but not both.')
+    if (designs is not None and difficulty is not None):
+      raise ValueError('Either designs or difficulty must be specified, but '
+                       'not both.')
+    if not (designs or difficulty):
+      raise ValueError('Either designs or difficulty must be specified.')
 
     if designs is None:
-      assert 1 <= difficulty <= 3, 'Difficulty must be between 1 and 3.'
+      if not (1 <= difficulty <= 3):
+        raise ValueError(f'Difficulty must be between 1 and 3, but got '
+                         f'{difficulty}.')
       designs = self._load_designs(self.difficulty)
 
     self._designs = designs
+
+    # Make sure that num_websites is not greater than the number of designs
+    if self.num_websites > len(self._designs):
+      raise ValueError(f'Number of websites to sample ({self.num_websites}) '
+                       f'cannot be greater than the number of designs '
+                       f'({len(self._designs)}).')
 
     # Randomly sample num_websites websites from the designs
     self._designs = self._random.choice(a=self._designs, size=self.num_websites,
@@ -60,7 +74,11 @@ class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
     obs, rew, terminated, truncated, info = super().step(action,
                                                          raw_state=raw_state)
     self._prev_obs = obs
-    return obs, rew, terminated, truncated, info
+
+    if self._use_legacy_step:
+      return obs, rew, (terminated or truncated), info
+    else:
+      return obs, rew, terminated, truncated, info
 
   def reset(
       self,
@@ -71,8 +89,11 @@ class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
     """Reset the environment."""
     design_to_use = self._sample_design()
     self._design_environment(env_design=design_to_use)
-    data = super().reset(raw_state=raw_state)
-    return data
+    obs, info = super().reset(raw_state=raw_state)
+    if self._use_legacy_reset:
+      return obs
+    else:
+      return obs, info
 
   def _design_environment(self, env_design):
     """Design the environment based` on the environment design."""
@@ -84,13 +105,15 @@ class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
     """Load the designs for the corresponding difficulty level."""
 
     # Load the designs file
-    design_path = os.path.join(self.data_dir,
+    design_path = os.path.join(self.data_dir, 'difficulty_levels',
                                f'{difficulty:02d}.json')
     if not os.path.isfile(design_path):
       logging.info('Could not find %s', design_path)
       zip_path = os.path.join(self.data_dir, 'difficulty_levels.zip')
       if not os.path.isfile(zip_path):
-        raise FileNotFoundError(f'Could not find {zip_path}')
+        raise FileNotFoundError(f'Neither {design_path} nor {zip_path} found.'
+                                f'Please make sure that the a2perf package is'
+                                f'installed correctly.')
 
       tmp_dir = os.path.join(os.path.expanduser('~'), '.web_navigation')
       if os.path.isdir(tmp_dir):

@@ -193,6 +193,8 @@ class GMiniWoBWebEnvironment(base_web_environment.WebEnvironment):
     env_design_edge = {'actions': []}
     selected_designs = []
     for action, page in zip(actions, pages):
+      # action is the actual name of the primitive, so we convert to index.
+      action = self._primitive_names.index(action)
       concept = self._primitive_names[action]
       if not self._primitive_to_design_dict[concept]:
         continue
