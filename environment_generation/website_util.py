@@ -476,6 +476,12 @@ class Page(object):
     Returns:
       float: The calculated difficulty of the page.
     """
+
+    # If there are no dom elements, then the difficulty is as easy as possible
+    if self.total_num_dom_elements == 0:
+      self.difficulty = 0
+      return self.difficulty
+
     prob_all_active_primitives_match = 1 / np.math.factorial(
         len(self.active_primitives))
     prob_distracting_primitive_clicked = sum(

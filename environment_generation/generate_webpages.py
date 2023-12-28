@@ -1,148 +1,94 @@
-import collections
-from absl import logging
+import json
+import multiprocessing
 import os
-import pickle
-import copy
+
 import numpy as np
 from absl import app
 from absl import flags
+from absl import logging
 
 from a2perf.domains.web_navigation.environment_generation import website_util
 from a2perf.domains.web_navigation.gwob.CoDE import web_primitives
 
-flags.DEFINE_integer(
-    'num_difficulty_levels', 10, 'Number of difficulty levels to generate.'
-)
+# Define flags for script configuration
+_SEED = flags.DEFINE_integer('seed', 0, 'Random seed for web page generation')
+_NUM_PROCESSES = flags.DEFINE_integer('num_processes', None,
+                                      'Number of processes to use.')
+_NUM_WEBSITES = flags.DEFINE_integer('num_websites', 10000,
+                                     'Number of websites to generate.')
+_OUTPUT_DIR = flags.DEFINE_string('output_dir', './data',
+                                  'Directory to save generated websites to.')
 
-flags.DEFINE_integer(
-    'seed', 1, 'Random seed for web page generation'
-)
-flags.DEFINE_multi_string(
-    'difficulty_names',
-    ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'],
-    'Names of difficulty levels.',
-)
-flags.DEFINE_integer('num_pages', 10000, 'Initial number of pages to generate.')
-flags.DEFINE_integer(
-    'max_num_primitives', 25, 'Maximum number of primitives per page.'
-)
-flags.DEFINE_integer(
-    'max_horizon', 25, 'Maximum number of pages in a sequence.'
-)
-flags.DEFINE_integer(
-    'websites_to_generate', 40000, 'Number of websites to generate.'
-)
-flags.DEFINE_string(
-    'output_dir', './data', 'Directory to save generated websites to.'
-)
-FLAGS = flags.FLAGS
+# Extending the original web primitives with a custom primitive for signaling new page creation
+CUSTOM_CONCEPTS = web_primitives.CONCEPTS + ['#next_page#']
+STOP_PRIMITIVE = '#none#'
+NEXT_PAGE_PRIMITIVE = '#next_page#'
 
 
-def estimate_num_websites_to_generate(num_primitives, avg_num_primitives_per_page, num_websites_to_generate_estimate):
-    l_values = np.array(range(1, avg_num_primitives_per_page + 1))
-    k_choose_two = num_primitives * (num_primitives - 1) / 2
+def generate_page(page_id):
+  """Generates a single page with primitives. Determines whether to add more pages based on random primitive selection."""
+  page = website_util.Page(page_id)
+  make_next_page = False
 
-    x = ((num_primitives - 2) / num_primitives) ** (avg_num_primitives_per_page - l_values) * (
-            1 / num_primitives) ** l_values
-    prob_j_never_appears_on_page_one_given_i_appears_on_page_one = 1 - np.sum(x)
-    prob_j_appears_on_page_one_given_i_appears_on_page_one = 1 - prob_j_never_appears_on_page_one_given_i_appears_on_page_one
-    prob_i_never_appears_on_page_one = ((num_primitives - 1) / num_primitives) ** avg_num_primitives_per_page
-    prob_i_appears_on_page_one = 1 - prob_i_never_appears_on_page_one
-    prob_both_ij_appear_on_page_one = prob_i_appears_on_page_one * prob_j_appears_on_page_one_given_i_appears_on_page_one
-    prob_ij_never_appear_on_page_one = 1 - prob_both_ij_appear_on_page_one
-    prob_ij_never_appear_on_any_page = prob_ij_never_appear_on_page_one ** num_websites_to_generate_estimate
-    prob_ij_appear_on_some_page_atleast_once = 1 - prob_ij_never_appear_on_any_page
+  while True:
+    primitive = np.random.choice(CUSTOM_CONCEPTS)
+    if primitive == NEXT_PAGE_PRIMITIVE:
+      make_next_page = True
+      break  # Indicates that a new page should be added after this one
+    elif primitive == STOP_PRIMITIVE:
+      break  # Stops generating more primitives for this page
+    else:
+      primitive_obj = website_util.Primitive(
+          name=primitive)  # Create primitive object
+      page.add_primitive(primitive_obj)
 
-    prob_each_pair_of_prims_on_some_page_atleast_once = prob_ij_appear_on_some_page_atleast_once ** k_choose_two
-    return prob_each_pair_of_prims_on_some_page_atleast_once
+  return page, make_next_page
+
+
+def generate_website():
+  """Generates a complete website by adding pages until a stopping condition is met."""
+  pages = []
+  current_page_id = 0
+  while True:
+    page, make_next_page = generate_page(current_page_id)
+    pages.append(page)
+    if not make_next_page:
+      break  # Stop generating more pages
+    current_page_id += 1
+
+  return website_util.Website(pages=pages)
 
 
 def main(_):
-    assert (
-            FLAGS.websites_to_generate >= FLAGS.num_pages
-    ), 'Number of pages must be less than number of websites to generate.'
+  """Main function to orchestrate website generation process."""
+  np.random.seed(_SEED.value)
+  os.makedirs(_OUTPUT_DIR.value, exist_ok=True)
 
-    # Set random seed
-    np.random.seed(FLAGS.seed)
+  # Parallel generation of websites, no arguments needed
+  with multiprocessing.Pool(_NUM_PROCESSES.value) as pool:
+    websites = pool.starmap(generate_website,
+                            [() for _ in range(_NUM_WEBSITES.value)])
+  logging.info('Generated %d websites.', len(websites))
 
-    if not os.path.exists(FLAGS.output_dir):
-        os.makedirs(FLAGS.output_dir)
+  # Sort the websites by difficulty
+  websites.sort(key=lambda website: website.difficulty)
 
-    if os.path.exists(os.path.join(FLAGS.output_dir, 'pages.pkl')):
-        with open(os.path.join(FLAGS.output_dir, 'pages.pkl'), 'rb') as f:
-            pages = pickle.load(f)
-        logging.info(f'Loaded {len(pages)} pages from {FLAGS.output_dir}.')
-    else:
-        # Randomly generate single web pages
-        pages = []
-        for page_id in range(FLAGS.num_pages):
-            page = website_util.Page(page_id)
-            num_primitives = np.random.randint(1, FLAGS.max_num_primitives + 1)
-            for _ in range(num_primitives):
-                primitive_name = np.random.choice(web_primitives.CONCEPTS[1:])
-                primitive_id = web_primitives.CONCEPTS.index(primitive_name)
-                primitive = website_util.generate_primitive(primitive_name, primitive_id)
+  # Convert each website to its design representation in parallel
+  with multiprocessing.Pool(_NUM_PROCESSES.value) as pool:
+    website_designs = pool.map(website_util.Website.convert_to_design, websites)
+  logging.info('Converted %d websites to designs.', len(website_designs))
 
-                logging.info(f'Adding primitive {primitive} to page {page_id}.')
-                page.add_primitive(primitive)
+  # Website designs is a list of dictionaries. It does not make sense to save duplicate designs, so let's only save unique design dictionaries.
+  website_designs = list(
+      {json.dumps(d, sort_keys=True) for d in website_designs})
+  website_designs = [json.loads(d) for d in website_designs]
 
-                if page.num_possible_correct_interactions >= FLAGS.max_horizon:
-                    break
+  logging.info('Generated %d unique website designs.', len(website_designs))
 
-            pages.append(page)
-        logging.info(f'Generated {len(pages)} pages.')
-
-        # Save the initial set of generated pages
-        with open(os.path.join(FLAGS.output_dir, 'pages.pkl'), 'wb') as f:
-            pickle.dump(pages, f)
-
-    # To create websites, randomly connect the pages together
-    websites = [website_util.Website(p) for p in pages]
-    generated_websites = len(websites)
-
-    while generated_websites < FLAGS.websites_to_generate:
-        website = np.random.choice(websites)
-        new_website = website_util.Website(first_page=website._pages[0])
-        new_website._pages = copy.copy(website._pages)
-
-        # Randomly select a next page from websites
-        next_website = np.random.choice(websites)
-        new_website._pages.extend(next_website._pages)
-        new_website.update()
-        assert new_website._num_possible_correct_steps == (
-                website._num_possible_correct_steps + next_website._num_possible_correct_steps
-        ), 'Number of possible correct steps should be equal to sum of number of possible correct steps of the two websites.'
-        if new_website._num_possible_correct_steps <= FLAGS.max_horizon:
-            websites.append(new_website)
-            logging.info(f'Generated website {len(websites)}.')
-            generated_websites += 1
-        # Save the generated websites every 10k websites
-        if generated_websites % 10000 == 0:
-            with open(os.path.join(FLAGS.output_dir, f'websites_{generated_websites}.pkl'), 'wb') as f:
-                pickle.dump(websites, f)
-            logging.info(f'Saved {len(websites)} websites.')
-    logging.info(f'Generated {len(websites)} websites.')
-
-    # Sort websites by difficulty
-    websites.sort(key=lambda x: x.difficulty)
-    logging.info('Sorted websites by difficulty.')
-
-    # Split websites into difficulty levels
-    partitioned_websites = np.array_split(websites, FLAGS.num_difficulty_levels)
-
-    # Convert websites into design dictionaries and save both designs and websites
-    designs = collections.defaultdict(list)
-    for difficulty_num, websites in enumerate(partitioned_websites):
-        for website in websites:
-            designs[FLAGS.difficulty_names[difficulty_num]].append(website.to_design())
-
-        # Save designs to files with numpy
-        # Save website objects to files with pickle
-        with open(f'{FLAGS.output_dir}/websites_{FLAGS.difficulty_names[difficulty_num]}.pkl', 'wb') as f:
-            pickle.dump(websites, f)
-
-    logging.info('Converted and saved websites and designs.')
+  # Save websites to disk
+  with open(os.path.join(_OUTPUT_DIR.value, 'website_designs.json'), 'w') as f:
+    json.dump(website_designs, f)
 
 
 if __name__ == '__main__':
-    app.run(main)
+  app.run(main)
