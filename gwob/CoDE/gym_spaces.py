@@ -17,18 +17,20 @@
 # For more information,
 # visit https://github.com/openai/gym/blob/master/gym/spaces/discrete.py
 
+import gym as legacy_gym
 import gymnasium as gym
+
 import numpy as np
 
 
-class Discrete(gym.spaces.Discrete):
+class Discrete(gym.spaces.Discrete, legacy_gym.spaces.Discrete):
   """A discrete space in gym with configurable dtype.
 
-    Default discrete space in gym doesn't allow changing dtype of which the
-    default value (np.int64) could be a problem for an RL framework.
+  This class is recognized as both a gymnasium.spaces.Discrete and
+  a legacy_gym.spaces.Discrete but uses only the functionality of gymnasium.spaces.Discrete.
 
-    Example:
-        >>> Discrete(2, dtype=np.int32)
+  Example:
+      >>> Discrete(2, dtype=np.int32)
   """
 
   def __init__(self, n, dtype=np.int64):
@@ -36,7 +38,8 @@ class Discrete(gym.spaces.Discrete):
       raise ValueError(
           "Data type of the discrete space should be 32bit or 64bit integer but found {}"
           .format(dtype))
-    super().__init__(n)
+    gym.spaces.Discrete.__init__(self,
+                                 n)
     self.dtype = dtype
 
   def sample(self, seed=None):
