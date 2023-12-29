@@ -6,6 +6,7 @@ import numpy as np
 from absl import app
 from absl import flags
 from absl import logging
+import functools
 
 from a2perf.domains.web_navigation.environment_generation import website_util
 from a2perf.domains.web_navigation.gwob.CoDE import web_primitives
@@ -45,8 +46,12 @@ def generate_page(page_id):
   return page, make_next_page
 
 
-def generate_website():
+def generate_website(seed):
   """Generates a complete website by adding pages until a stopping condition is met."""
+
+  # We need to seed the random number generator for each process
+  np.random.seed(seed)
+
   pages = []
   current_page_id = 0
   while True:
@@ -61,27 +66,44 @@ def generate_website():
 
 def main(_):
   """Main function to orchestrate website generation process."""
-  np.random.seed(_SEED.value)
+
+  seeds = [_SEED.value + i for i in range(_NUM_WEBSITES.value)]
   os.makedirs(_OUTPUT_DIR.value, exist_ok=True)
 
   # Parallel generation of websites, no arguments needed
   with multiprocessing.Pool(_NUM_PROCESSES.value) as pool:
     websites = pool.starmap(generate_website,
-                            [() for _ in range(_NUM_WEBSITES.value)])
+                            zip(seeds))  # Generate websites in parallel
+
   logging.info('Generated %d websites.', len(websites))
 
   # Sort the websites by difficulty
   websites.sort(key=lambda website: website.difficulty)
 
-  # Convert each website to its design representation in parallel
+  # Print out summary statistics for number of pages, difficulty, and number of primitives
+  logging.info('Website statistics:')
+  difficulties = [website.difficulty for website in websites]
+  num_pages = [len(website._pages) for website in websites]
+  num_primitives = [len(page.primitives) for website in websites for page in
+                    website._pages]
+
+  for values, name in zip([difficulties, num_pages, num_primitives],
+                          ['difficulty', 'num_pages', 'num_primitives']):
+    logging.info('  %s: mean=%f, std=%f, min=%f, max=%f', name, np.mean(values),
+                 np.std(values), np.min(values), np.max(values))
+
+    # Convert each website to its design representation in parallel
   with multiprocessing.Pool(_NUM_PROCESSES.value) as pool:
     website_designs = pool.map(website_util.Website.convert_to_design, websites)
   logging.info('Converted %d websites to designs.', len(website_designs))
 
   # Website designs is a list of dictionaries. It does not make sense to save duplicate designs, so let's only save unique design dictionaries.
-  website_designs = list(
-      {json.dumps(d, sort_keys=True) for d in website_designs})
-  website_designs = [json.loads(d) for d in website_designs]
+
+  with multiprocessing.Pool(_NUM_PROCESSES.value) as pool:
+    json_dump_function = functools.partial(json.dumps, sort_keys=True)
+    website_designs = pool.map(json_dump_function, website_designs)
+    website_designs = list(set(website_designs))
+    website_designs = pool.map(json.loads, website_designs)
 
   logging.info('Generated %d unique website designs.', len(website_designs))
 
