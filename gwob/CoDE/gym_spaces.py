@@ -17,7 +17,7 @@
 # For more information,
 # visit https://github.com/openai/gym/blob/master/gym/spaces/discrete.py
 
-import gym
+import gymnasium as gym
 import numpy as np
 
 
@@ -39,5 +39,7 @@ class Discrete(gym.spaces.Discrete):
     super().__init__(n)
     self.dtype = dtype
 
-  def sample(self):
-    return self.np_random.randint(self.n, dtype=self.dtype)
+  def sample(self, seed=None):
+    if seed:
+      self.seed(seed)
+    return self.np_random.integers(self.n, dtype=self.dtype)
