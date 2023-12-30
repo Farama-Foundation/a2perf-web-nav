@@ -16,7 +16,7 @@ RUN ${APT_COMMAND} update && \
     add-apt-repository ppa:deadsnakes/ppa && \
     ${APT_COMMAND} update && \
     ${APT_COMMAND} upgrade && \
-    ${APT_COMMAND} install --allow-change-held-packages \
+    ${APT_COMMAND} install \
     python3.10 \
     python3.10-dev  \
     python3.10-venv  \
@@ -31,10 +31,7 @@ RUN ${APT_COMMAND} update && \
     dbus-x11 \
     unzip  \
     x11-apps  \
-    x11-utils \
-    libcudnn8  \
-    libcudnn8-dev && \
-    rm -rf /var/lib/apt/lists/*
+    x11-utils && rm -rf /var/lib/apt/lists/*
 
 # Add TensorRT
 RUN ${APT_COMMAND} update && \
@@ -90,8 +87,8 @@ RUN sudo chown -R user:user_group /home/user
 
 # Set PATH to include the virtual environment's bin directory
 ENV PATH="/home/user/venv/bin:${PATH}"
-ENV PATH="/usr/local/cuda/bin:${PATH}"
-ENV LD_LIBRARY_PATH="/usr/local/cuda/lib64:${LD_LIBRARY_PATH}"
+#ENV PATH="/usr/local/cuda/bin:${PATH}"
+#ENV LD_LIBRARY_PATH="/usr/local/cuda/lib64:${LD_LIBRARY_PATH}"
 
 # Entry Point
 ENTRYPOINT sudo service ssh start && sudo service dbus start && bash

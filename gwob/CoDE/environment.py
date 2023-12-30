@@ -21,7 +21,7 @@ class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
       self,
       seed: int,
       data_dir: str,
-      num_websites: int = 1,
+      num_websites: int,
       difficulty: Optional[int] = None,
       designs: Optional[list[dict[str, Any]]] = None,
       global_vocabulary=None,
