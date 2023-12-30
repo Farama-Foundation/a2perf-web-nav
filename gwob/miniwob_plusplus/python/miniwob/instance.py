@@ -15,6 +15,7 @@ from threading import Thread
 
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
+from webdriver_manager.core.driver_cache import DriverCacheManager
 
 from a2perf.domains.web_navigation.gwob.miniwob_plusplus.python.miniwob.fields import \
   Fields
@@ -188,8 +189,10 @@ class MiniWoBInstance(Thread):
     if self.chrome_options:
       for opt in self.chrome_options:
         options.add_argument(opt)
-
-    service = Service(ChromeDriverManager().install())
+    driver_cache_manager = DriverCacheManager(valid_range=30)  # 30 days
+    chrome_driver_manager = ChromeDriverManager(
+        cache_manager=driver_cache_manager)
+    service = Service(chrome_driver_manager.install())
     self.driver = webdriver.Chrome(service=service,
                                    options=options)
     self.driver.implicitly_wait(10)
