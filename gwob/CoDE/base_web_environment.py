@@ -783,8 +783,8 @@ class WebEnvironment(gym.Env):
 
     for episode_num, screenshots in self.screenshots.items():
       for step_num, screenshot in enumerate(screenshots):
-        step_num = str(step_num).zfill(5)
-        episode_num = str(episode_num).zfill(5)
+        step_num = str(step_num).zfill(3)
+        episode_num = str(episode_num).zfill(9)
         screenshot_name = f'{episode_num}_{step_num}.png'
         screenshot.save(os.path.join(screenshot_save_dir, screenshot_name))
 

@@ -1,22 +1,21 @@
 import json
-import numpy as np
 import socket
 import time
 import traceback
 import urllib.parse
-from absl import logging
 from queue import Queue
+from threading import Thread
+
+import numpy as np
+from absl import logging
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
-from threading import Thread
-
-from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from webdriver_manager.core.driver_cache import DriverCacheManager
-from webdriver_manager.chrome import ChromeDriver
 
 from a2perf.domains.web_navigation.gwob.miniwob_plusplus.python.miniwob.fields import \
   Fields
