@@ -16,7 +16,9 @@
 """Web Environment."""
 from __future__ import annotations
 
+import collections
 import json
+import os
 from typing import Any
 
 import gin
@@ -36,7 +38,9 @@ from a2perf.domains.web_navigation.gwob.miniwob_plusplus.python.miniwob.action i
 from a2perf.domains.web_navigation.gwob.miniwob_plusplus.python.miniwob.fields import \
   get_field_extractor
 from a2perf.domains.web_navigation.gwob.miniwob_plusplus.python.miniwob.screenshot import \
-  get_screenshot, pil_to_numpy_array
+  get_screenshot
+from a2perf.domains.web_navigation.gwob.miniwob_plusplus.python.miniwob.screenshot import \
+  pil_to_numpy_array
 
 
 class BaseJavascriptError(JavascriptException):
@@ -91,6 +95,7 @@ class WebEnvironment(gym.Env):
       randomized_env_components=None,
       use_potential_based_reward=False,
       generate_screenshots=False,
+      screenshot_save_dir=None,
       global_vocabulary=None,
       # Kwargs for WoB Env.
       browser_args=None,
@@ -175,6 +180,7 @@ class WebEnvironment(gym.Env):
     self.subdomain = subdomain
     self._step_limit = step_limit
     self._mode = mode
+    self.screenshot_save_dir = screenshot_save_dir
     self._verbose = verbose
     self.seed(seed=seed)
     self.base_url = base_url
@@ -214,6 +220,14 @@ class WebEnvironment(gym.Env):
     self.use_potential_based_reward = use_potential_based_reward
     self.generate_screenshots = generate_screenshots
 
+    if (self.generate_screenshots and self.screenshot_save_dir is None):
+      raise ValueError(
+          'To generate screenshots, screenshot_save_dir must be specified.')
+
+    if self.screenshot_save_dir is not None:
+      self.generate_screenshots = True
+
+    self.screenshots = collections.defaultdict(list)
     threading_arg = browser_args.get('threading', False)
     if threading_arg and (
         gminiwob_required_complexity != 'original' or
@@ -437,11 +451,9 @@ class WebEnvironment(gym.Env):
       self.verbose = True
     # A list of tuples that keep which dom element is used with which profile.
     self.dom_profile_acted_list = []
-    # List of screenshots, mainly for generating episode gifs.
-    self.screenshots = []
     # Potential of the previous state for reward shaping.
     self.prev_potential = 0.0
-    # Keep track of which elements are already typed a text so that we can put
+    # Keep track of which elements are already typed a text so that we can p# Whenever we reset the environment, we also reset the screenshot list.
     # a space when we type another text to the element.
     self.typed_refs = set()
     # gMiniWoB allows tuning environment difficulty from outside if it is
@@ -462,6 +474,7 @@ class WebEnvironment(gym.Env):
       logging.info('New Episode @ %d', self.episode_number)
       logging.info('Profile: %s --[Parsed]--> %s', self._obs.utterance.strip(),
                    str(raw_profile))
+
     # Update the 'ref's of elements in the current observation.
     self.prev_refs = [
         dom_elem.ref for dom_elem in utils.get_dom_elements(self._obs)
@@ -527,6 +540,13 @@ class WebEnvironment(gym.Env):
     # Increment step number.
     self._num_steps += 1
 
+    terminated = self.done
+    truncated = self._num_steps >= self._step_limit
+
+    # Generate the screenshot
+    if self.generate_screenshots:
+      self.generate_screenshot_from_driver()
+
     # If raw state is needed, return the observation without wrapping.
     if raw_state:
       return self._obs, np.array(self.current_reward,
@@ -542,9 +562,6 @@ class WebEnvironment(gym.Env):
       logging.info('Reward : %f', self.current_reward)
       if self.use_potential_based_reward:
         logging.info('Potential : %f', self.prev_potential)
-
-    terminated = self.done
-    truncated = self._num_steps >= self._step_limit
 
     # Return observation in numpy arrays.
     return self.wrap_observation(), np.array(
@@ -719,10 +736,6 @@ class WebEnvironment(gym.Env):
       self.current_reward += self.step_limit_reward
 
     if not self.done:
-      # Keep screenshots.
-      if self.generate_screenshots:
-        self.generate_screenshot_from_driver()
-
       # Miniwob info for the 0th instance.
       self.current_info = infos.get('n', [{}])[0]
 
@@ -765,14 +778,22 @@ class WebEnvironment(gym.Env):
     Args:
       screenshot_save_dir: Directory to save the screenshots.
     """
-    for i, screenshot in enumerate(self.screenshots):
-      screenshot.save(
-          f'{screenshot_save_dir}/episode_{str(self.episode_number)}_{str(i)}.png'
-      )
+    if not os.path.exists(screenshot_save_dir):
+      os.makedirs(screenshot_save_dir, exist_ok=True)
+
+    for episode_num, screenshots in self.screenshots.items():
+      for step_num, screenshot in enumerate(screenshots):
+        step_num = str(step_num).zfill(5)
+        episode_num = str(episode_num).zfill(5)
+        screenshot_name = f'{episode_num}_{step_num}.png'
+        screenshot.save(os.path.join(screenshot_save_dir, screenshot_name))
+
+    self.screenshots.clear()
 
   def generate_screenshot_from_driver(self):
     """Generate a screenshot from current page."""
-    self.screenshots.append(self.render())
+    screenshot = self.render()
+    self.screenshots[self.episode_number].append(screenshot)
 
   def render(self):
     """Render current observation."""
@@ -780,7 +801,7 @@ class WebEnvironment(gym.Env):
                                 self._wob_env.instances[0].task_width,
                                 self._wob_env.instances[0].task_height)
     if self._mode == 'test':
-      self.screenshots.append(screenshot)
+      self.screenshots[self.episode_number].append(screenshot)
 
     if self.render_mode == 'human':
       logging.error(

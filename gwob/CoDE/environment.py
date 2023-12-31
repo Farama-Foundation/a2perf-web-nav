@@ -74,7 +74,6 @@ class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
     obs, rew, terminated, truncated, info = super().step(action,
                                                          raw_state=raw_state)
     self._prev_obs = obs
-
     if self._use_legacy_step:
       return obs, rew, (terminated or truncated), info
     else:

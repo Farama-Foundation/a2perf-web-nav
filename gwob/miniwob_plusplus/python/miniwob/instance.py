@@ -16,6 +16,7 @@ from threading import Thread
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from webdriver_manager.core.driver_cache import DriverCacheManager
+from webdriver_manager.chrome import ChromeDriver
 
 from a2perf.domains.web_navigation.gwob.miniwob_plusplus.python.miniwob.fields import \
   Fields
@@ -53,6 +54,9 @@ class MiniWoBInstance(Thread):
   FLIGHT_WINDOW_HEIGHT = 700
   FLIGHT_TASK_WIDTH = 375
   FLIGHT_TASK_HEIGHT = 667
+
+  WINDOW_POSITION_X = 9000
+  WINDOW_POSITION_Y_OFFSET = 30
 
   def __init__(self, index, subdomain, seed,
       base_url=None, cache_state=False, threading=False, chrome_options=None,
@@ -169,43 +173,73 @@ class MiniWoBInstance(Thread):
 
   ################################
   # Possible Functions
-
   def create_driver(self):
-    """Create a driver"""
-    assert not hasattr(self, 'driver'), \
-      'Instance {} already has a driver'.format(self.index)
+    """
+    Create a Chrome WebDriver instance for the class.
+    This method handles driver caching, initializes options based on class properties,
+    and manages the WebDriver instance for further use.
+    """
+    assert not hasattr(self,
+                       'driver'), f'Instance {self.index} already has a driver'
+    options = self._configure_driver_options()
+
+    chromedriver_binary_path = self._get_driver_path()
+    service = Service(executable_path=chromedriver_binary_path)
+    self.driver = webdriver.Chrome(service=service, options=options)
+    self._initialize_driver_session()
+
+  def _configure_driver_options(self):
     options = webdriver.ChromeOptions()
 
-    headless = self.chrome_options is not None and '--headless' in self.chrome_options
+    headless = self.chrome_options and '--headless' in self.chrome_options
     if not headless:
-      # custom window sizing if rendering
-      options.add_argument('--use-gl=swiftshader')
-      options.add_argument('app=' + self.url)
-      options.add_argument('window-size={},{}'
-                           .format(self.window_width, self.window_height))
-      options.add_argument('window-position={},{}'
-                           .format(9000,
-                                   30 + self.index * (self.window_height + 30)))
+      self._set_rendering_options(options)
+
     if self.chrome_options:
       for opt in self.chrome_options:
         options.add_argument(opt)
-    driver_cache_manager = DriverCacheManager(valid_range=30)  # 30 days
-    chrome_driver_manager = ChromeDriverManager(
-        cache_manager=driver_cache_manager)
-    service = Service(chrome_driver_manager.install())
-    self.driver = webdriver.Chrome(service=service,
-                                   options=options)
+
+    return options
+
+  def _set_rendering_options(self, options):
+    options.add_argument('--use-gl=swiftshader')
+    options.add_argument(f'app={self.url}')
+    window_position_y = self.WINDOW_POSITION_Y_OFFSET + self.index * (
+        self.window_height + self.WINDOW_POSITION_Y_OFFSET)
+    options.add_argument(
+        f'window-size={self.window_width},{self.window_height}')
+    options.add_argument(
+        f'window-position={self.WINDOW_POSITION_X},{window_position_y}')
+
+  def _get_driver_path(self):
+    driver_cache_manager = DriverCacheManager()
+    driver_cache_manager_metadata = driver_cache_manager.load_metadata_content()
+
+    if driver_cache_manager_metadata:
+      latest_driver = max(driver_cache_manager_metadata.items(),
+                          key=lambda x: x[1]['timestamp'])
+      chromedriver_binary_path = latest_driver[1]['binary_path']
+      logging.info(f'Using cached driver at {chromedriver_binary_path}')
+    else:
+      logging.info('No cached driver found, downloading latest version')
+      chromedriver_binary_path = ChromeDriverManager().install()
+
+    return chromedriver_binary_path
+
+  def _initialize_driver_session(self):
     self.driver.implicitly_wait(10)
+    headless = '--headless' in self.chrome_options if self.chrome_options else False
     if headless:
       self.driver.get(self.url)
+
     try:
       WebDriverWait(self.driver, 5).until(
           EC.element_to_be_clickable((By.ID, self.SYNC_SCREEN_ID)))
     except TimeoutException as e:
       logging.error('Page did not load properly. Wrong MINIWOB_BASE_URL?')
       raise e
-    # Seed the seed
-    self.driver.execute_script('Math.seedrandom({});'.format(self.init_seed))
+
+    self.driver.execute_script(f'Math.seedrandom({self.init_seed});')
 
   def close(self):
     """Tear down the WebDriver."""

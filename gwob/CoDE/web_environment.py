@@ -96,6 +96,7 @@ class GMiniWoBWebEnvironment(base_web_environment.WebEnvironment):
       # Kwargs for WoB Env.
       browser_args=None,
       # GMiniWoB related parameters
+      screenshot_save_dir=None,
       use_conceptual=False,
       transitions_given=False,
       # Primitive params.
@@ -132,6 +133,7 @@ class GMiniWoBWebEnvironment(base_web_environment.WebEnvironment):
         use_potential_based_reward=use_potential_based_reward,
         generate_screenshots=generate_screenshots,
         global_vocabulary=global_vocabulary,
+        screenshot_save_dir=screenshot_save_dir,
         seed=seed,
         browser_args=browser_args)
     self._use_conceptual = use_conceptual
@@ -579,6 +581,13 @@ class GMiniWoBWebEnvironment(base_web_environment.WebEnvironment):
     # Increment step number.
     self._num_steps += 1
 
+    truncated = self._num_steps >= self._step_limit
+    terminated = self.done or truncated
+
+    # Generate the screenshot
+    if self.generate_screenshots:
+      self.generate_screenshot_from_driver()
+
     if raw_state:  # If raw state, return state without wrapping in numpy.
       return self._obs, np.array(self.current_reward,
                                  np.float32), self.done, self.current_info
@@ -590,9 +599,6 @@ class GMiniWoBWebEnvironment(base_web_environment.WebEnvironment):
       logging.info('Reward : %f', self.current_reward)
       if self.use_potential_based_reward:
         logging.info('Potential : %f', self.prev_potential)
-
-    truncated = self._num_steps >= self._step_limit
-    terminated = self.done or truncated
 
     # Return observation in numpy arrays.
     return self.wrap_observation(), np.array(
