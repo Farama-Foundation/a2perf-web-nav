@@ -18,6 +18,7 @@ class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
             difficulty,
             data_dir,
             designs=None,
+            raw_state=False,
             global_vocabulary=vocabulary_node.LockedVocabulary(),
             **kwargs,
     ):
@@ -25,6 +26,7 @@ class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
         self.data_dir = data_dir
         self.difficulty = difficulty
         self.browser_kwargs = kwargs['kwargs_dict']
+        self._raw_state = raw_state
 
         if designs is None:
             self._designs = self._load_designs(self.difficulty)
@@ -37,15 +39,15 @@ class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
         self._current_design = None
         self._prev_obs = None
 
-    def step(self, action, raw_state=False):
-        obs, rew, done, info = super().step(action, raw_state=raw_state)
+    def step(self, action):
+        obs, rew, done, info = super().step(action, raw_state=self._raw_state)
         self._prev_obs = obs
         return obs, rew, done, info
 
-    def reset(self, raw_state=False):
+    def reset(self):
         """Reset the environment."""
         self._design_environment(env_design=self._sample_design())
-        data = super().reset(raw_state=raw_state)
+        data = super().reset(raw_state=self._raw_state)
         return data
 
     def _design_environment(self, env_design):
