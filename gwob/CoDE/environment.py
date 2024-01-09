@@ -28,6 +28,7 @@ class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
       use_legacy_reset: bool = False,
       use_legacy_step: bool = False,
       render_mode: str = 'image',
+      raw_state: bool = False,
       **kwargs,
   ):
     super().__init__(seed=seed, global_vocabulary=global_vocabulary,
@@ -70,9 +71,11 @@ class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
     self._current_design = None
     self._prev_obs = None
 
-  def step(self, action, raw_state=False):
+    self._raw_state = raw_state
+
+  def step(self, action):
     obs, rew, terminated, truncated, info = super().step(action,
-                                                         raw_state=raw_state)
+                                                         raw_state=self._raw_state)
     self._prev_obs = obs
     if self._use_legacy_step:
       return obs, rew, (terminated or truncated), info
@@ -81,14 +84,13 @@ class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
 
   def reset(
       self,
-      raw_state: bool = False,
       seed: int | None = None,
       options: dict[str, Any] | None = None,
   ) -> tuple[ObsType, dict[str, Any]]:  # type: ignore
     """Reset the environment."""
     design_to_use = self._sample_design()
     self._design_environment(env_design=design_to_use)
-    obs, info = super().reset(raw_state=raw_state)
+    obs, info = super().reset(raw_state=self._raw_state)
     if self._use_legacy_reset:
       return obs
     else:
