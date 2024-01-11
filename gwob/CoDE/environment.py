@@ -21,7 +21,7 @@ class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
       self,
       seed: int,
       data_dir: str,
-      num_websites: int,
+      num_websites: int | None = None,
       difficulty: Optional[int] = None,
       designs: Optional[list[dict[str, Any]]] = None,
       global_vocabulary=None,
@@ -43,6 +43,9 @@ class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
       self.browser_kwargs = kwargs.get('browser_args', None)
     else:
       self.browser_kwargs = None
+
+    if num_websites is None :
+      raise ValueError('Number of websites (num_websites) must be specified.')
 
     if (designs is not None and difficulty is not None):
       raise ValueError('Either designs or difficulty must be specified, but '
