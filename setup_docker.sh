@@ -12,7 +12,7 @@ echo "WEB_NAV_CONTAINER_NAME: $WEB_NAV_CONTAINER_NAME"
 
 # create ssh-key in WEB_NAV_DIR without password
 mkdir -p "$WEB_NAV_DIR/.ssh"
-ssh-keygen -t rsa -b 4096 -C "web_nav" -f "$WEB_NAV_DIR/.ssh/id_rsa" -N ""
+ssh-keygen -t rsa -b 4096 -C "web_navigation" -f "$WEB_NAV_DIR/.ssh/id_rsa" -N ""
 
 # CONNECT TO RUNNING DOCKER CONTAINER WITH THIS COMMAND
 # ssh user@127.0.0.1 -p 2022 -i .ssh/id_rsa

@@ -1,7 +1,7 @@
 import gin
 import gym
 from absl import app
-import web_nav
+import web_navigation
 
 from a2perf.domains.web_navigation.CoDE import utils
 from a2perf.domains.web_navigation.CoDE import vocabulary_node

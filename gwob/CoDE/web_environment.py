@@ -84,7 +84,8 @@ class GMiniWoBWebEnvironment(base_web_environment.WebEnvironment):
       verbose_prob=0.1,
       seed=None,
       # Gminiwob parameters.
-      global_vocabulary=vocabulary_node.LockedMultiprocessingVocabulary(),
+      # global_vocabulary=vocabulary_node.LockedMultiprocessingVocabulary(),
+      global_vocabulary=vocabulary_node.LockedThreadedVocabulary(),
       gminiwob_required_complexity='original',
       gminiwob_unrequired_complexity='original',
       subtasks=None,
