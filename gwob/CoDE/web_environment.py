@@ -591,7 +591,7 @@ class GMiniWoBWebEnvironment(base_web_environment.WebEnvironment):
 
     if raw_state:  # If raw state, return state without wrapping in numpy.
       return self._obs, np.array(self.current_reward,
-                                 np.float32), self.done, self.current_info
+                                 np.float32), terminated, truncated, self.current_info
 
     # Log current step.
     if self.verbose:
