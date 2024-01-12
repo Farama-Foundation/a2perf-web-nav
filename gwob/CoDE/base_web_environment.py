@@ -21,7 +21,7 @@ import json
 import os
 from typing import Any
 
-import gin
+# import gin
 import gymnasium.spaces as spaces
 import gymnasium as gym
 import numpy as np
@@ -55,7 +55,7 @@ class EnvironmentTerminateError(Exception):
   """Raised when the step is called while environment is done."""
 
 
-@gin.configurable('WebEnvironment')
+# @gin.configurable('WebEnvironment')
 class WebEnvironment(gym.Env):
   """Wrapper for WoB environments."""
 

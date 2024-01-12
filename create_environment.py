@@ -3,10 +3,10 @@ import gym
 from absl import app
 import web_navigation
 
-from a2perf.domains.web_navigation.CoDE import utils
-from a2perf.domains.web_navigation.CoDE import vocabulary_node
-from a2perf.domains.web_navigation.CoDE import web_environment
-from a2perf.domains.web_navigation.CoDE import web_primitives
+from a2perf.domains.web_navigation.gwob.CoDE import utils
+from a2perf.domains.web_navigation.gwob.CoDE import vocabulary_node
+from a2perf.domains.web_navigation.gwob.CoDE import web_environment
+from a2perf.domains.web_navigation.gwob.CoDE import web_primitives
 
 
 def main(_):

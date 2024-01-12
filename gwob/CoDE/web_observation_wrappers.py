@@ -21,7 +21,7 @@ from a2perf.domains.web_navigation.gwob.CoDE.utils import dom_element_representa
 from a2perf.domains.web_navigation.gwob.CoDE.utils import get_dom_elements
 from a2perf.domains.web_navigation.gwob.CoDE.utils import indexify
 from a2perf.domains.web_navigation.gwob.CoDE.vocabulary_utils import tokenize
-import gin
+# import gin
 import numpy as np
 
 
@@ -82,7 +82,7 @@ def wrap_structured_profile(raw_profile, local_vocabulary, profile_length,
   return profile_keys, profile_values, profile_key_mask, profile_value_mask, profile_mask
 
 
-@gin.configurable
+# @gin.configurable
 def dom_representation(obs,
                        local_vocabulary,
                        dom_attribute_sequence_length,

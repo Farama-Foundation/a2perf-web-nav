@@ -18,7 +18,7 @@
 import json
 import time
 
-import gin
+# import gin
 import numpy as np
 from absl import logging
 from selenium.common.exceptions import JavascriptException
@@ -51,41 +51,42 @@ class VisitPrimitivesError(base_web_environment.BaseJavascriptError):
   """Raised when a primitive can not be visited in the website."""
 
 
-@gin.configurable('GMiniWoBWebEnvironment')
+# @gin.configurable('GMiniWoBWebEnvironment')
 class GMiniWoBWebEnvironment(base_web_environment.WebEnvironment):
   """GMiniWoB environment wrapper."""
 
   def __init__(
       self,
       base_url,
-      subdomain,
+      subdomain="gminiwob.generic_website",
       # Profile params.
-      profile_length,
-      number_of_fields,
-      use_only_profile_key,
+      profile_length=10,
+      number_of_fields=25,
+      use_only_profile_key=False,
       # Dom params.
-      number_of_dom_elements,
-      dom_attribute_sequence_length,
+      number_of_dom_elements=250,
+      dom_attribute_sequence_length=10,
       use_dom_profile_intersection=False,
       # Action params.
       number_of_action_types=2,
-      keyboard_action_size=5,
+      keyboard_action_size=25,
       # Env params.
       render_mode='image',
-      step_limit=6,
-      cyclic_action_penalty=0.0,
-      timestep_penalty=0.0,
-      exact_wob_reward=True,
+      step_limit=25,
+      cyclic_action_penalty=0.5,
+      timestep_penalty=0.05,
+      exact_wob_reward=False,
       step_limit_reward=0.0,
       final_reward_bias=0.0,
       # General params.
       mode='train',
-      verbose=False,
+      verbose=True,
       verbose_prob=0.1,
       seed=None,
       # Gminiwob parameters.
       # global_vocabulary=vocabulary_node.LockedMultiprocessingVocabulary(),
       global_vocabulary=vocabulary_node.LockedThreadedVocabulary(),
+      # global_vocabulary=@vocabulary_node.create_locked_vocab(),
       gminiwob_required_complexity='original',
       gminiwob_unrequired_complexity='original',
       subtasks=None,

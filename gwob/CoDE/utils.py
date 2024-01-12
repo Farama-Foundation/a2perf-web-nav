@@ -18,7 +18,7 @@
 import collections
 import re
 
-import gin
+# import gin
 import numpy as np
 
 from a2perf.domains.web_navigation.gwob.CoDE.vocabulary_utils import tokenize
@@ -123,7 +123,7 @@ def create_dom_graph(observation, prune_refs=None):
     return dom_elems, senders, receivers
 
 
-@gin.configurable
+# @gin.configurable
 def order_dom_elements(dom_elements, only_leaf=False, html_id_prefix=None):
     """Order dom elements based on their ref.
 
@@ -170,7 +170,7 @@ def order_dom_elements(dom_elements, only_leaf=False, html_id_prefix=None):
     return sorted(dom_elems, key=lambda x: x.ref)
 
 
-@gin.configurable
+# @gin.configurable
 def get_dom_elements(observation, prune_refs=None, prune_form_input=False):
     """Return a list of dom elements from a given observation.
 
@@ -323,7 +323,7 @@ def generate_web_action(dom_elements,
         .format(action_type))
 
 
-@gin.configurable
+# @gin.configurable
 def dom_attributes(dom_element, num_attributes=-1):
     """Return a list of dom attributes.
 
@@ -380,7 +380,7 @@ def dom_element_representation(dom_element,
     return indexified_attributes, mask
 
 
-@gin.configurable
+# @gin.configurable
 def get_word_to_id(word,
                    local_vocabulary,
                    check_for_numbers=False,
@@ -434,7 +434,7 @@ def get_word_to_id(word,
         word, local_vocabulary, check_for_numbers=check_for_numbers)
 
 
-@gin.configurable
+# @gin.configurable
 def indexify(tokens, local_vocabulary, max_sequence_length):
     """Map tokens to ids and pad with id of NULL if necessary.
 

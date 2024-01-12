@@ -6,25 +6,26 @@ import zipfile
 from typing import Any
 from typing import Optional
 
-import gin
+# import gin
 from absl import logging
 
 from a2perf.domains.web_navigation.environment_generation import website_util
 from a2perf.domains.web_navigation.gwob.CoDE import web_environment
+from a2perf.domains.web_navigation.gwob.CoDE import vocabulary_node
 
 
-@gin.configurable('WebNavigationEnv')
+# @gin.configurable('WebNavigationEnv')
 class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
   """Web Navigation Environment."""
 
   def __init__(
       self,
-      seed: int,
-      data_dir: str,
+      seed: int = 0,
+      data_dir: str=os.path.join(os.path.dirname(__file__),'environment_generation','data',),
       num_websites: int | None = None,
-      difficulty: Optional[int] = None,
+      difficulty: Optional[int] = 1,
       designs: Optional[list[dict[str, Any]]] = None,
-      global_vocabulary=None,
+      global_vocabulary=vocabulary_node.LockedThreadedVocabulary(),
       use_legacy_reset: bool = False,
       use_legacy_step: bool = False,
       render_mode: str = 'image',

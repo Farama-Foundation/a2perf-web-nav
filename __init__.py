@@ -1,6 +1,6 @@
 import os
 
-import gin
+# import gin
 import gym as legacy_gym
 import gymnasium as gym
 
@@ -17,9 +17,9 @@ data_dir = os.path.join(
     'data',
 )
 
-gin.parse_config_files_and_bindings(
-    [config_file_path], None, finalize_config=False
-)
+# gin.parse_config_files_and_bindings(
+#     [config_file_path], None, finalize_config=False
+# )
 gym.envs.register(
     id='WebNavigation-v0',
     entry_point=(

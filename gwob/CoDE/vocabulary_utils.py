@@ -15,7 +15,7 @@
 
 """Vocabulary items and utility functions."""
 import re
-import gin
+# import gin
 
 # initial vocabulary
 VOCAB = set()
@@ -23,7 +23,7 @@ VOCAB.add("NULL")
 VOCAB.add("OOV")
 
 
-@gin.configurable
+# @gin.configurable
 def tokenize(sentence, structured_input=False, lowercase=True,
              camelcase=False):
   """Tokenize a given sequence of words.
