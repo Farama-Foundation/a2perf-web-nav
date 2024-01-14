@@ -14,7 +14,6 @@
 # limitations under the License.
 
 """A global vocabulary."""
-import multiprocessing
 import threading
 import typing
 from multiprocessing.managers import DictProxy
@@ -162,14 +161,14 @@ class DistributedVocabulary(Vocabulary):
 
 
 class LockedMultiprocessingVocabulary(DistributedVocabulary):
-  def __init__(self, multiprocessing_manager=None, max_vocabulary_size=15000,
+  def __init__(self, shared_lock=None, shared_dict=None,
+      max_vocabulary_size=15000,
   ):
     super(LockedMultiprocessingVocabulary, self).__init__(
         max_vocabulary_size=max_vocabulary_size)
-    multiprocessing_manager = multiprocessing_manager or multiprocessing.Manager()
-    self.lock = multiprocessing_manager.Lock()
+    self.lock = shared_lock
     self._max_vocabulary_size = max_vocabulary_size
-    self._local_vocab = multiprocessing_manager.dict()
+    self._local_vocab = shared_dict
     self._next_index = 0
 
   def save(self) -> typing.Dict[str, int]:
@@ -182,3 +181,12 @@ class LockedThreadedVocabulary(DistributedVocabulary):
     super(LockedThreadedVocabulary, self).__init__(
         max_vocabulary_size=max_vocabulary_size)
     self.lock = threading_lock or threading.Lock()
+
+
+class LockedFileVocabulary(DistributedVocabulary):
+  def __init__(self, filename, max_vocabulary_size=15000):
+    super(LockedFileVocabulary, self).__init__(
+        max_vocabulary_size=max_vocabulary_size)
+    self.filename = filename
+
+    # In this class, we create a local file that contains the vocabulary

@@ -314,7 +314,9 @@ class WebLSTMValueNetwork(network.Network):
         state_spec=state_spec,
         name=name)
     self._batch_squash = batch_squash
-    self._lstm_encoder = WebLSTMEncoder(**kwargs)
+    # self._lstm_encoder = WebLSTMEncoder(**kwargs)
+    lstm_kwargs = kwargs.get('lstm_kwargs', {})
+    self._lstm_encoder = WebLSTMEncoder(**lstm_kwargs)
     self._postprocessing_layers = tf.keras.layers.Dense(
         1,
         activation=None,
