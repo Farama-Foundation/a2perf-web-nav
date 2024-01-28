@@ -314,7 +314,6 @@ class WebLSTMValueNetwork(network.Network):
         state_spec=state_spec,
         name=name)
     self._batch_squash = batch_squash
-    # self._lstm_encoder = WebLSTMEncoder(**kwargs)
     lstm_kwargs = kwargs.get('lstm_kwargs', {})
     self._lstm_encoder = WebLSTMEncoder(**lstm_kwargs)
     self._postprocessing_layers = tf.keras.layers.Dense(
@@ -383,8 +382,6 @@ class WebLSTMCategoricalProjectionNetwork(network.DistributionNetwork):
 
     self._sample_spec = sample_spec
     self._output_shape = output_shape
-    # self._projection_layer = WebLSTMActor(**lstm_kwargs,
-    #                                       name='web_lstm_projection')
     self._projection_layer = WebLSTMEncoder(**lstm_kwargs,
                                             name='web_lstm_projection')
 
