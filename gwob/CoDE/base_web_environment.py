@@ -22,8 +22,8 @@ import os
 from typing import Any
 
 import gin
-import gym.spaces as spaces
 import gymnasium as gym
+import gymnasium.spaces as spaces
 import numpy as np
 from absl import logging
 from selenium.common.exceptions import JavascriptException
