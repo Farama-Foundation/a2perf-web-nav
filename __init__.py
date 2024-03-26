@@ -5,14 +5,14 @@ import gym as legacy_gym
 import gymnasium as gym
 import pkg_resources
 
-base_url_path = pkg_resources.resource_dir('a2perf.domains.web_navigation.gwob')
+base_url_path = pkg_resources.resource_filename('a2perf.domains.web_navigation',
+                                                'gwob')
 config_file_path = pkg_resources.resource_filename(
     'a2perf', 'domains/web_navigation/configs/web_navigation_env_config.gin'
 )
 base_url = f'file://{base_url_path}/'
-
-data_directory = pkg_resources.resource_dir(
-    'a2perf.domains.web_navigation.gwob.CoDE.environment')
+data_directory = pkg_resources.resource_filename(
+    'a2perf.domains.web_navigation.gwob.CoDE', 'environment')
 data_dir = os.path.join(data_directory, 'data')
 
 gin.parse_config_files_and_bindings(
