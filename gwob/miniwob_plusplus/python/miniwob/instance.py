@@ -8,14 +8,13 @@ from threading import Thread
 
 import numpy as np
 from absl import logging
+from chromedriver_py import binary_path
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
-from webdriver_manager.chrome import ChromeDriverManager
-from webdriver_manager.core.driver_cache import DriverCacheManager
 
 from a2perf.domains.web_navigation.gwob.miniwob_plusplus.python.miniwob.fields import \
   Fields
@@ -182,8 +181,7 @@ class MiniWoBInstance(Thread):
                        'driver'), f'Instance {self.index} already has a driver'
     options = self._configure_driver_options()
 
-    chromedriver_binary_path = self._get_driver_path()
-    service = Service(executable_path=chromedriver_binary_path)
+    service = Service(executable_path=binary_path)
     self.driver = webdriver.Chrome(service=service, options=options)
     self._initialize_driver_session()
 
@@ -209,21 +207,6 @@ class MiniWoBInstance(Thread):
         f'window-size={self.window_width},{self.window_height}')
     options.add_argument(
         f'window-position={self.WINDOW_POSITION_X},{window_position_y}')
-
-  def _get_driver_path(self):
-    driver_cache_manager = DriverCacheManager()
-    driver_cache_manager_metadata = driver_cache_manager.load_metadata_content()
-
-    if driver_cache_manager_metadata:
-      latest_driver = max(driver_cache_manager_metadata.items(),
-                          key=lambda x: x[1]['timestamp'])
-      chromedriver_binary_path = latest_driver[1]['binary_path']
-      logging.info(f'Using cached driver at {chromedriver_binary_path}')
-    else:
-      logging.info('No cached driver found, downloading latest version')
-      chromedriver_binary_path = ChromeDriverManager().install()
-
-    return chromedriver_binary_path
 
   def _initialize_driver_session(self):
     self.driver.implicitly_wait(10)

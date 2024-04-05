@@ -11,9 +11,8 @@ config_file_path = pkg_resources.resource_filename(
     'a2perf', 'domains/web_navigation/configs/web_navigation_env_config.gin'
 )
 base_url = f'file://{base_url_path}/'
-data_directory = pkg_resources.resource_filename(
-    'a2perf.domains.web_navigation.gwob.CoDE', 'environment')
-data_dir = os.path.join(data_directory, 'data')
+data_dir = pkg_resources.resource_filename(
+    'a2perf.domains.web_navigation.environment_generation', 'data')
 
 gin.parse_config_files_and_bindings(
     [config_file_path], None, finalize_config=False

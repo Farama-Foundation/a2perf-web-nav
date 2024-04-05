@@ -111,8 +111,8 @@ class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
       zip_path = os.path.join(self.data_dir, 'difficulty_levels.zip')
       if not os.path.isfile(zip_path):
         raise FileNotFoundError(f'Neither {design_path} nor {zip_path} found.'
-                                f'Please make sure that the a2perf package is'
-                                f'installed correctly.')
+                                f' Please make sure that the a2perf package is'
+                                f' installed correctly.')
 
       tmp_dir = os.path.join(os.path.expanduser('~'), '.web_navigation')
       if os.path.isdir(tmp_dir):
