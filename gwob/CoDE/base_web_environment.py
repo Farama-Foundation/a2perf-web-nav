@@ -28,19 +28,20 @@ import numpy as np
 from absl import logging
 from selenium.common.exceptions import JavascriptException
 
-import a2perf.domains.web_navigation.gwob.CoDE.gym_spaces as custom_gym_spaces
 from a2perf.domains.web_navigation.gwob.CoDE import utils
 from a2perf.domains.web_navigation.gwob.CoDE import vocabulary_node
 from a2perf.domains.web_navigation.gwob.CoDE import vocabulary_utils
 from a2perf.domains.web_navigation.gwob.CoDE import web_observation_wrappers
-from a2perf.domains.web_navigation.gwob.miniwob_plusplus.python.miniwob.action import \
-  MiniWoBTerminate
-from a2perf.domains.web_navigation.gwob.miniwob_plusplus.python.miniwob.fields import \
-  get_field_extractor
-from a2perf.domains.web_navigation.gwob.miniwob_plusplus.python.miniwob.screenshot import \
-  get_screenshot
-from a2perf.domains.web_navigation.gwob.miniwob_plusplus.python.miniwob.screenshot import \
-  pil_to_numpy_array
+from a2perf.domains.web_navigation.gwob.miniwob_plusplus.python.miniwob.action import MiniWoBTerminate
+from a2perf.domains.web_navigation.gwob.miniwob_plusplus.python.miniwob.fields import get_field_extractor
+from a2perf.domains.web_navigation.gwob.miniwob_plusplus.python.miniwob.screenshot import get_screenshot
+from a2perf.domains.web_navigation.gwob.miniwob_plusplus.python.miniwob.screenshot import pil_to_numpy_array
+from absl import logging
+import gin
+import gymnasium as gym
+import gymnasium.spaces as spaces
+import numpy as np
+from selenium.common.exceptions import JavascriptException
 
 
 class BaseJavascriptError(JavascriptException):
@@ -99,7 +100,8 @@ class WebEnvironment(gym.Env):
       global_vocabulary=None,
       # Kwargs for WoB Env.
       browser_args=None,
-      seed=None, ):
+      seed=None,
+  ):
     """Initialize a web environment.
 
     Implement:
@@ -184,9 +186,12 @@ class WebEnvironment(gym.Env):
     self._verbose = verbose
     self.seed(seed=seed)
     self.base_url = base_url
-    self._wob_env = utils.create_environment(subdomain, base_url,
-                                             random_state=self._random,
-                                             browser_args=browser_args)
+    self._wob_env = utils.create_environment(
+        subdomain,
+        base_url,
+        random_state=self._random,
+        browser_args=browser_args,
+    )
     # 5 main attributes: tag, value, text, placeholder, class, [name]
     self.number_of_dom_attributes = 5
     # The global vocabulary is wrapped with a client.Client class. Creating the
@@ -194,7 +199,8 @@ class WebEnvironment(gym.Env):
     # members, that are not exposed from the Client obj.
     self.local_vocab = vocabulary_node.Vocabulary(
         global_vocabulary,
-        max_vocabulary_size=global_vocabulary.max_vocabulary_size)
+        max_vocabulary_size=global_vocabulary.max_vocabulary_size,
+    )
     self.local_vocab.add_to_vocabulary(vocabulary_utils.VOCAB)
     self.vocab_size = self.local_vocab.max_vocabulary_size
 
@@ -220,9 +226,10 @@ class WebEnvironment(gym.Env):
     self.use_potential_based_reward = use_potential_based_reward
     self.generate_screenshots = generate_screenshots
 
-    if (self.generate_screenshots and self.screenshot_save_dir is None):
+    if self.generate_screenshots and self.screenshot_save_dir is None:
       raise ValueError(
-          'To generate screenshots, screenshot_save_dir must be specified.')
+          'To generate screenshots, screenshot_save_dir must be specified.'
+      )
 
     if self.screenshot_save_dir is not None:
       self.generate_screenshots = True
@@ -230,11 +237,15 @@ class WebEnvironment(gym.Env):
     self.screenshots = collections.defaultdict(list)
     threading_arg = browser_args.get('threading', False)
     if threading_arg and (
-        gminiwob_required_complexity != 'original' or
-        gminiwob_unrequired_complexity != 'original'):
+        gminiwob_required_complexity != 'original'
+        or gminiwob_unrequired_complexity != 'original'
+    ):
       raise ValueError(
-          'Setting environment difficult levels ({}, {}) via javascript requires no threading.'
-          .format(gminiwob_required_complexity, gminiwob_unrequired_complexity))
+          'Setting environment difficult levels ({}, {}) via javascript'
+          ' requires no threading.'.format(
+              gminiwob_required_complexity, gminiwob_unrequired_complexity
+          )
+      )
     self.subtasks = subtasks
     self.randomized_within_groups = randomized_within_groups
     self.randomized_across_groups = randomized_across_groups
@@ -243,17 +254,22 @@ class WebEnvironment(gym.Env):
       raise ValueError(
           'Number of fields for structured profile '
           'should be equal to type action size but got {} != {}.'.format(
-              self.number_of_fields, self.keyboard_action_size))
+              self.number_of_fields, self.keyboard_action_size
+          )
+      )
 
     if timestep_penalty < 0.0 or timestep_penalty > 1.0:
       raise ValueError(
           'Timestep penalty should be between 0.0 and 1.0 but got {}'.format(
-              timestep_penalty))
+              timestep_penalty
+          )
+      )
     self.timestep_penalty = timestep_penalty
     if cyclic_action_penalty < 0.0 or cyclic_action_penalty > 1.0:
       raise ValueError(
           'Cyclic action discount should be between 0.0 and 1.0 but got {}'
-          .format(cyclic_action_penalty))
+          .format(cyclic_action_penalty)
+      )
     self.cyclic_action_penalty = cyclic_action_penalty
 
     # this assumes that the observations are already converted to numpy
@@ -265,7 +281,8 @@ class WebEnvironment(gym.Env):
             number_of_fields,
             profile_length,
         ),
-        dtype=np.int32)
+        dtype=np.int32,
+    )
     profile_mask_space = spaces.Box(
         low=0.0,
         high=1.0,
@@ -273,51 +290,49 @@ class WebEnvironment(gym.Env):
             number_of_fields,
             profile_length,
         ),
-        dtype=np.float32)
+        dtype=np.float32,
+    )
     self.space_dict = {
         'profile_key': profile_space,
         'profile_value': profile_space,
         'profile_key_mask': profile_mask_space,
-        'profile_value_mask': profile_mask_space
+        'profile_value_mask': profile_mask_space,
     }
     self.space_dict.update({
-        'dom_elements':
-          spaces.Box(
-              low=0.0,
-              high=float(self.vocab_size) - 1,
-              shape=(
-                  number_of_dom_elements,
-                  self.number_of_dom_attributes,
-                  self.dom_attribute_sequence_length,
-              ),
-              dtype=np.int32),
-        'dom_attribute_mask':  # this is to mask word embeddings
-          spaces.Box(
-              low=0.0,
-              high=1.0,
-              shape=(
-                  number_of_dom_elements,
-                  self.number_of_dom_attributes,
-                  self.dom_attribute_sequence_length,
-              ),
-              dtype=np.float32),
+        'dom_elements': spaces.Box(
+            low=0.0,
+            high=float(self.vocab_size) - 1,
+            shape=(
+                number_of_dom_elements,
+                self.number_of_dom_attributes,
+                self.dom_attribute_sequence_length,
+            ),
+            dtype=np.int32,
+        ),
+        'dom_attribute_mask': spaces.Box(  # this is to mask word embeddings
+            low=0.0,
+            high=1.0,
+            shape=(
+                number_of_dom_elements,
+                self.number_of_dom_attributes,
+                self.dom_attribute_sequence_length,
+            ),
+            dtype=np.float32,
+        ),
         # mask dom elements and profile fields in action distribution
-        'dom_profile_joint_mask':
-          spaces.Box(
-              low=0.0,
-              high=1.0,
-              shape=(number_of_fields, number_of_dom_elements),
-              dtype=np.float32),
+        'dom_profile_joint_mask': spaces.Box(
+            low=0.0,
+            high=1.0,
+            shape=(number_of_fields, number_of_dom_elements),
+            dtype=np.float32,
+        ),
         # mask dom elements
-        'dom_elements_mask':
-          spaces.Box(
-              low=0.0,
-              high=1.0,
-              shape=(number_of_dom_elements,),
-              dtype=np.float32),
-        'time_step':  # current time step
-          spaces.Box(
-              low=0.0, high=self._step_limit, shape=(1,), dtype=np.float32),
+        'dom_elements_mask': spaces.Box(
+            low=0.0, high=1.0, shape=(number_of_dom_elements,), dtype=np.float32
+        ),
+        'time_step': spaces.Box(  # current time step
+            low=0.0, high=self._step_limit, shape=(1,), dtype=np.float32
+        ),
     })
     if self.use_dom_profile_intersection:
       self.space_dict['dom_profile_intersection'] = spaces.Box(
@@ -330,7 +345,8 @@ class WebEnvironment(gym.Env):
               2,  # key and value
               self.dom_attribute_sequence_length,
           ),
-          dtype=np.int32)
+          dtype=np.int32,
+      )
       self.space_dict['dom_profile_intersection_mask'] = spaces.Box(
           low=0.0,
           high=1.0,
@@ -341,7 +357,8 @@ class WebEnvironment(gym.Env):
               2,  # key and value
               self.dom_attribute_sequence_length,
           ),
-          dtype=np.float32)
+          dtype=np.float32,
+      )
       self.space_dict['dom_profile_jaccard_sim'] = spaces.Box(
           low=0.0,
           high=1.0,
@@ -352,7 +369,8 @@ class WebEnvironment(gym.Env):
               2,  # key and value
               3,  # jaccard, overlap/profile, overlap/dom
           ),
-          dtype=np.float32)
+          dtype=np.float32,
+      )
     if self.number_of_dom_features > 0:
       self.space_dict['dom_features'] = spaces.Box(
           low=0.0,
@@ -361,13 +379,17 @@ class WebEnvironment(gym.Env):
               number_of_dom_elements,
               self.number_of_dom_features,
           ),
-          dtype=np.float32)  # focused, tampered, is_new, is_div
+          dtype=np.float32,
+      )  # focused, tampered, is_new, is_div
     self.observation_space = spaces.Dict(self.space_dict)
     # We need a custom discrete space to configure dtype for acme framework
-    self.action_space = custom_gym_spaces.Discrete(
-        number_of_dom_elements * number_of_action_types * keyboard_action_size,
-        np.int32)
+    # self.action_space = custom_gym_spaces.Discrete(
+    #     number_of_dom_elements * number_of_action_types * keyboard_action_size,
+    #     np.int32)
 
+    # Using Gymnasium's Discrete space instead of custom discrete space
+    self.action_space = spaces.Discrete(
+        number_of_dom_elements * number_of_action_types * keyboard_action_size)
     self._obs = None
     self._num_steps = 0
     self.current_reward = 0.0
@@ -386,10 +408,13 @@ class WebEnvironment(gym.Env):
 
   def set_environment_options(self):
     options = {}
-    if self.gminiwob_required_complexity != 'original' or self.gminiwob_unrequired_complexity != 'original':
+    if (
+        self.gminiwob_required_complexity != 'original'
+        or self.gminiwob_unrequired_complexity != 'original'
+    ):
       options = {
           'requiredComplexity': self.gminiwob_required_complexity,
-          'unrequiredComplexity': self.gminiwob_unrequired_complexity
+          'unrequiredComplexity': self.gminiwob_unrequired_complexity,
       }
     if self.subtasks:
       options['subTasks'] = self.subtasks
@@ -404,12 +429,15 @@ class WebEnvironment(gym.Env):
     if options:
       for instance in self._wob_env.instances:
         try:
-          instance.driver.execute_script('createEnvironment({});'.format(
-              json.dumps(options)))
+          instance.driver.execute_script(
+              'createEnvironment({});'.format(json.dumps(options))
+          )
         except JavascriptException as e:
           logging.info(
-              'Error in running createEnvironment(...) function in the environment: %s',
-              str(e))
+              'Error in running createEnvironment(...) function in the'
+              ' environment: %s',
+              str(e),
+          )
 
   def reset(
       self,
@@ -472,22 +500,37 @@ class WebEnvironment(gym.Env):
 
     if self.verbose:
       logging.info('New Episode @ %d', self.episode_number)
-      logging.info('Profile: %s --[Parsed]--> %s', self._obs.utterance.strip(),
-                   str(raw_profile))
+      logging.info(
+          'Profile: %s --[Parsed]--> %s',
+          self._obs.utterance.strip(),
+          str(raw_profile),
+      )
 
     # Update the 'ref's of elements in the current observation.
     self.prev_refs = [
         dom_elem.ref for dom_elem in utils.get_dom_elements(self._obs)
     ]
     if not raw_state:  # wrap into a numpy array
-      return web_observation_wrappers.wrap_observation(
-          self._obs, self.structured_field_extractor, self._num_steps,
-          self._step_limit, self.use_dom_profile_intersection,
-          self.number_of_dom_features, self.local_vocab, self.profile_length,
-          self.number_of_fields, self.dom_attribute_sequence_length,
-          self.number_of_dom_attributes, self.prev_refs,
-          self.number_of_dom_elements, self.use_only_profile_key,
-          self.dom_profile_acted_list), self.current_info
+      return (
+          web_observation_wrappers.wrap_observation(
+              self._obs,
+              self.structured_field_extractor,
+              self._num_steps,
+              self._step_limit,
+              self.use_dom_profile_intersection,
+              self.number_of_dom_features,
+              self.local_vocab,
+              self.profile_length,
+              self.number_of_fields,
+              self.dom_attribute_sequence_length,
+              self.number_of_dom_attributes,
+              self.prev_refs,
+              self.number_of_dom_elements,
+              self.use_only_profile_key,
+              self.dom_profile_acted_list,
+          ),
+          self.current_info,
+      )
     else:
       return self._obs, self.current_info
 
@@ -518,15 +561,18 @@ class WebEnvironment(gym.Env):
     """
     if self.done:
       raise EnvironmentTerminateError(
-          'Step is called while environment is done.')
+          'Step is called while environment is done.'
+      )
 
     # Convert input action to a web action tuple.
-    action_type, profile_index, dom_element_index = self._convert_to_action_tuple(
-        action)
+    action_type, profile_index, dom_element_index = (
+        self._convert_to_action_tuple(action)
+    )
 
     # Create miniwob level action.
-    miniwob_action = self._create_miniwob_action(action_type, profile_index,
-                                                 dom_element_index)
+    miniwob_action = self._create_miniwob_action(
+        action_type, profile_index, dom_element_index
+    )
 
     # Execute the action.
     states, _, _, infos = self._execute_miniwob_action(miniwob_action)
@@ -549,24 +595,35 @@ class WebEnvironment(gym.Env):
 
     # If raw state is needed, return the observation without wrapping.
     if raw_state:
-      return self._obs, np.array(self.current_reward,
-                                 np.float32), self.done, self.current_info
+      return (
+          self._obs,
+          np.array(self.current_reward, np.float32),
+          self.done,
+          self.current_info,
+      )
 
     # Log current step.
     if self.verbose:
       logging.info('Timestep@%d', self._num_steps)
-      logging.info('Mouse : %s, Type : %s, DOM : %s',
-                   str(self.current_actions[0]), str(self.current_actions[1]),
-                   str(self.current_actions[2]))
+      logging.info(
+          'Mouse : %s, Type : %s, DOM : %s',
+          str(self.current_actions[0]),
+          str(self.current_actions[1]),
+          str(self.current_actions[2]),
+      )
       logging.info('System Action: %s', str(miniwob_action))
       logging.info('Reward : %f', self.current_reward)
       if self.use_potential_based_reward:
         logging.info('Potential : %f', self.prev_potential)
 
     # Return observation in numpy arrays.
-    return self.wrap_observation(), np.array(
-        self.current_reward,
-        np.float32), terminated, truncated, self.current_info
+    return (
+        self.wrap_observation(),
+        np.array(self.current_reward, np.float32),
+        terminated,
+        truncated,
+        self.current_info,
+    )
 
   @property
   def utterance(self):
@@ -592,7 +649,8 @@ class WebEnvironment(gym.Env):
         prev_refs=self.prev_refs,
         number_of_dom_elements=self.number_of_dom_elements,
         use_only_profile_key=self.use_only_profile_key,
-        dom_profile_acted_list=self.dom_profile_acted_list)
+        dom_profile_acted_list=self.dom_profile_acted_list,
+    )
 
   def _convert_to_action_tuple(self, action):
     """Convert a given action to an action tuple.
@@ -620,16 +678,19 @@ class WebEnvironment(gym.Env):
       (action_type, profile_index, dom_element_index) = action
     else:
       action_type = int(
-          action / (self.number_of_dom_elements * self.keyboard_action_size))
+          action / (self.number_of_dom_elements * self.keyboard_action_size)
+      )
       action = action - action_type * (
-          self.number_of_dom_elements * self.keyboard_action_size)
+          self.number_of_dom_elements * self.keyboard_action_size
+      )
       profile_index = int(action / self.number_of_dom_elements)
       dom_element_index = action - profile_index * self.number_of_dom_elements
     self.current_actions = (action_type, profile_index, dom_element_index)
     return action_type, profile_index, dom_element_index
 
-  def _create_miniwob_action(self, action_type, profile_index,
-      dom_element_index):
+  def _create_miniwob_action(
+      self, action_type, profile_index, dom_element_index
+  ):
     """Create a miniwob level action that is executable.
 
     Args:
@@ -655,7 +716,8 @@ class WebEnvironment(gym.Env):
           action_type,
           dom_element_index,
           type_seq=type_seq,
-          typed_refs=self.typed_refs)
+          typed_refs=self.typed_refs,
+      )
     return miniwob_action
 
   def _execute_miniwob_action(self, miniwob_action):
@@ -677,17 +739,21 @@ class WebEnvironment(gym.Env):
     # reward is the same as the cyclic action penalty as semantically this is a
     # cyclic action.
     if not miniwob_action:
-      return [self._obs], [np.float32(self.cyclic_action_penalty)
-                           ], [self.done], {
-          'n': [self.current_info]
-      }
+      return (
+          [self._obs],
+          [np.float32(self.cyclic_action_penalty)],
+          [self.done],
+          {'n': [self.current_info]},
+      )
     try:
       # Run the miniwob action on the environment.
       states, rewards, dones, infos = self._wob_env.step([miniwob_action])
     except ValueError as e:
       logging.info(
-          'Got a value error while getting utterance form the website: %s. Terminating episiode.',
-          str(e))
+          'Got a value error while getting utterance form the website: %s.'
+          ' Terminating episiode.',
+          str(e),
+      )
       dones = [True]
       rewards = [0.0]
 
@@ -710,7 +776,8 @@ class WebEnvironment(gym.Env):
         potential += instance.driver.execute_script('return potential();')
       except JavascriptException as e:
         raise PotentialComputationError(
-            f'Can not compute potential: {e}.') from e
+            f'Can not compute potential: {e}.'
+        ) from e
     return potential
 
   def _estimate_reward_and_diff(self, infos, states):
@@ -726,8 +793,11 @@ class WebEnvironment(gym.Env):
       potential = self._compute_potential()
 
     # Potential based reward shaping.
-    if (not self.exact_wob_reward and self.use_potential_based_reward and
-        potential is not None):  # Estimate potential based reward.
+    if (
+        not self.exact_wob_reward
+        and self.use_potential_based_reward
+        and potential is not None
+    ):  # Estimate potential based reward.
       self.current_reward += potential - self.prev_potential
 
     # Penalize if the step limit is reached but episode is not terminated.
@@ -797,15 +867,19 @@ class WebEnvironment(gym.Env):
 
   def render(self):
     """Render current observation."""
-    screenshot = get_screenshot(self._wob_env.instances[0].driver,
-                                self._wob_env.instances[0].task_width,
-                                self._wob_env.instances[0].task_height)
+    screenshot = get_screenshot(
+        self._wob_env.instances[0].driver,
+        self._wob_env.instances[0].task_width,
+        self._wob_env.instances[0].task_height,
+    )
     if self._mode == 'test':
       self.screenshots[self.episode_number].append(screenshot)
 
     if self.render_mode == 'human':
       logging.error(
-          'Rendering in human mode is not supported since the browser should be visible.')
+          'Rendering in human mode is not supported since the browser should be'
+          ' visible.'
+      )
     elif self.render_mode == 'rgb_array':
       rgb_array = pil_to_numpy_array(screenshot)
       return rgb_array
