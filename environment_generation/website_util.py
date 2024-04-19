@@ -408,171 +408,258 @@ PRIMITIVE_INFO_DICT = {
 
 
 class Primitive(object):
-  def __init__(self, name, primitive_id=None):
     """
-    Initializes a primitive.
+    Represents a primitive element on a web page.
 
-    Args:
-      name (str): Name of the primitive.
-      primitive_id (int): Id of the primitive, used to identify the primitive
-                          especially when multiple primitives of the same type exist on a page.
+    Attributes:
+        name (str): Name of the primitive.
+        primitive_id (int, optional): ID of the primitive, used to identify the primitive especially when multiple primitives of the same type exist on a page.
+        num_dom_elements (int): Number of DOM elements associated with the primitive.
+        is_active (bool): Indicates whether the primitive is active or not.
+
+    Methods:
+        __init__: Initializes a primitive with the given name and optional ID.
+        __str__: Returns a string representation of the primitive.
+        __repr__: Returns a string representation of the primitive suitable for debugging.
+
+    Example:
+        >>> primitive = Primitive('button', primitive_id=1)
+        >>> print(primitive)
+        button:1. Active: True
     """
-    self.name = name
-    self.primitive_id = primitive_id
-    self.num_dom_elements = PRIMITIVE_INFO_DICT[name]['num_dom_elements']
-    self.is_active = PRIMITIVE_INFO_DICT[name]['active']
+    
+    def __init__(self, name, primitive_id=None):
+        """
+        Initializes a primitive.
 
-  def __str__(self):
-    return f'{self.name}:{self.primitive_id}. Active: {self.is_active}'
+        Args:
+            name (str): Name of the primitive.
+            primitive_id (int): ID of the primitive, used to identify the primitive
+                especially when multiple primitives of the same type exist on a page.
+        """
+        self.name = name
+        self.primitive_id = primitive_id
+        self.num_dom_elements = PRIMITIVE_INFO_DICT[name]['num_dom_elements']
+        self.is_active = PRIMITIVE_INFO_DICT[name]['active']
 
-  def __repr__(self):
-    return self.__str__()
+    def __str__(self):
+        """
+        Returns:
+            str: A string representing the primitive with its name, ID, and activity status.
+        """
+        return f'{self.name}:{self.primitive_id}. Active: {self.is_active}'
+
+    def __repr__(self):
+        """
+        Returns:
+            str: A string representation of the primitive, suitable for debugging.
+        """
+        return self.__str__()
 
 
 class Page(object):
-  """
-  A Page represents a collection of primitives within a website.
-  """
-
-  def __init__(self, page_id):
-    self.primitives = []
-    self.total_num_dom_elements = 0
-    self.difficulty = 0
-    self.page_id = page_id
-
-  @property
-  def num_primitives(self):
-    """Returns the number of primitives on the page."""
-    return len(self.primitives)
-
-  @property
-  def active_primitives(self):
-    """Returns a list of active primitives on the page."""
-    return [primitive for primitive in self.primitives if primitive.is_active]
-
-  @property
-  def passive_primitives(self):
-    """Returns a list of passive (non-active) primitives on the page."""
-    return [primitive for primitive in self.primitives if
-            not primitive.is_active]
-
-  def add_primitive(self, primitive):
     """
-    Adds a primitive to the page.
+    Represents a collection of primitives within a website.
 
-    Args:
-      primitive (Primitive): The primitive to be added to the page.
-    """
-    if primitive.name not in PRIMITIVE_INFO_DICT:
-      raise ValueError(f"Primitive name '{primitive.name}' is not defined.")
-    self.primitives.append(primitive)
-    self.total_num_dom_elements += primitive.num_dom_elements
+    Attributes:
+        primitives (list): A list of primitive objects on the page.
+        total_num_dom_elements (int): Total number of DOM elements associated with all primitives on the page.
+        difficulty (float): Difficulty level of the page.
+        page_id (str): Identifier for the page.
 
-  def calculate_difficulty(self):
-    """
-    Computes and returns the difficulty of the page based on the probability
-    of a random agent interacting with the correct primitives.
+    Methods:
+        __init__: Initializes a Page object with the given page ID.
+        num_primitives: Returns the number of primitives on the page.
+        active_primitives: Returns a list of active primitives on the page.
+        passive_primitives: Returns a list of passive (non-active) primitives on the page.
+        add_primitive: Adds a primitive to the page.
+        calculate_difficulty: Computes and returns the difficulty of the page based on primitive interactions.
 
-    Returns:
-      float: The calculated difficulty of the page.
+    Example:
+        >>> page = Page('home')
+        >>> print(page.num_primitives)
+        0
     """
 
-    # If there are no dom elements, then the difficulty is as easy as possible
-    if self.total_num_dom_elements == 0:
-      self.difficulty = 0
-      return self.difficulty
+    def __init__(self, page_id):
+        """
+        Initializes a Page object.
 
-    prob_all_active_primitives_match = 1 / np.math.factorial(
-        len(self.active_primitives))
-    prob_distracting_primitive_clicked = sum(
-        [primitive.num_dom_elements for primitive in self.passive_primitives]
-    ) / self.total_num_dom_elements
+        Args:
+            page_id (str): Identifier for the page.
+        """
+        self.primitives = []
+        self.total_num_dom_elements = 0
+        self.difficulty = 0
+        self.page_id = page_id
 
-    prob_no_distracting_primitives_clicked = 1 - prob_distracting_primitive_clicked
+    @property
+    def num_primitives(self):
+        """
+        Returns the number of primitives on the page.
 
-    prob_website_filled_out_correctly = (
-        prob_all_active_primitives_match * prob_no_distracting_primitives_clicked
-    )
-    self.difficulty = -np.log(prob_website_filled_out_correctly + 1e-8)
-    return self.difficulty
+        Returns:
+            int: Number of primitives on the page.
+        """
+        return len(self.primitives)
+
+    @property
+    def active_primitives(self):
+        """
+        Returns a list of active primitives on the page.
+
+        Returns:
+            list: List of active primitives on the page.
+        """
+        return [primitive for primitive in self.primitives if primitive.is_active]
+
+    @property
+    def passive_primitives(self):
+        """
+        Returns a list of passive (non-active) primitives on the page.
+
+        Returns:
+            list: List of passive primitives on the page.
+        """
+        return [primitive for primitive in self.primitives if
+                not primitive.is_active]
+
+    def add_primitive(self, primitive):
+        """
+        Adds a primitive to the page.
+
+        Args:
+            primitive (Primitive): The primitive to be added to the page.
+        """
+        if primitive.name not in PRIMITIVE_INFO_DICT:
+            raise ValueError(f"Primitive name '{primitive.name}' is not defined.")
+        self.primitives.append(primitive)
+        self.total_num_dom_elements += primitive.num_dom_elements
+
+    def calculate_difficulty(self):
+        """
+        Computes and returns the difficulty of the page based on the probability
+        of a random agent interacting with the correct primitives.
+
+        Returns:
+            float: The calculated difficulty of the page.
+        """
+
+        # If there are no dom elements, then the difficulty is as easy as possible
+        if self.total_num_dom_elements == 0:
+            self.difficulty = 0
+            return self.difficulty
+
+        prob_all_active_primitives_match = 1 / np.math.factorial(
+            len(self.active_primitives))
+        prob_distracting_primitive_clicked = sum(
+            [primitive.num_dom_elements for primitive in self.passive_primitives]
+        ) / self.total_num_dom_elements
+
+        prob_no_distracting_primitives_clicked = 1 - prob_distracting_primitive_clicked
+
+        prob_website_filled_out_correctly = (
+            prob_all_active_primitives_match * prob_no_distracting_primitives_clicked
+        )
+        self.difficulty = -np.log(prob_website_filled_out_correctly + 1e-8)
+        return self.difficulty
 
 
 class Website(object):
-  """
-  A Website is a sequence of pages, representing a complete website structure.
-  """
-
-  def __init__(self, design=None, pages=None):
-    if not (design or pages):
-      raise ValueError('Either design or pages must be provided.')
-    if design is not None and pages is not None:
-      raise ValueError('Either design or pages must be provided, but not both.')
-
-    self._pages = []
-    if pages is not None:
-      self._pages = pages
-    else:
-      self._pages = [Page(page_id) for page_id in
-                     range(design['number_of_pages'])]
-      for i, (primitive_page_index, primitive_name) in enumerate(zip(
-          design['action_page'], design['action']
-      )):
-        if primitive_name not in web_primitives.CONCEPTS:
-          raise ValueError(
-              f"Invalid primitive: {primitive_name}. Must be one of "
-              f"{web_primitives.CONCEPTS}."
-          )
-        self._pages[primitive_page_index].add_primitive(
-            Primitive(primitive_id=i, name=primitive_name))
-
-    self._calculate_difficulty()
-
-  def _calculate_difficulty(self):
     """
-    Computes and updates the difficulty of the entire website.
-    """
-    self.difficulty = 0
-    for page in self._pages:
-      self.difficulty += page.calculate_difficulty()
-    return self.difficulty
+    A Website is a sequence of pages, representing a complete website structure.
 
-  def add_page(self, page):
-    """
-    Adds a page to the website.
+    Attributes:
+        difficulty (float): The difficulty level of the entire website.
+        _pages (list): A list of Page objects representing the pages of the website.
 
-    Args:
-      page (Page): The page to be added to the website.
-    """
-    self._pages.append(page)
-    self._calculate_difficulty()
+    Methods:
+        __init__: Initializes a Website object with provided design or pages.
+        _calculate_difficulty: Computes and updates the difficulty of the entire website.
+        add_page: Adds a page to the website.
+        remove_page: Removes a page from the website.
+        convert_to_design: Converts the website structure into a design dictionary format.
+    """ 
+    def __init__(self, design=None, pages=None):
+        """
+        Initializes a Website object.
 
-  def remove_page(self, page):
-    """
-    Removes a page from the website.
+        Args:
+            design (dict): The design dictionary representing the structure of the website.
+            pages (list): A list of Page objects representing the pages of the website.
 
-    Args:
-      page (Page): The page to be removed from the website.
-    """
-    self._pages.remove(page)
-    self._calculate_difficulty()
+        Raises:
+            ValueError: If neither design nor pages are provided, or if both are provided.
+        """
+        if not (design or pages):
+            raise ValueError('Either design or pages must be provided.')
+        if design is not None and pages is not None:
+            raise ValueError('Either design or pages must be provided, but not both.')
 
-  def convert_to_design(self):
-    """
-    Converts the website structure into a design dictionary format.
+        self._pages = []
+        if pages is not None:
+            self._pages = pages
+        else:
+            self._pages = [Page(page_id) for page_id in range(design['number_of_pages'])]
+            for i, (primitive_page_index, primitive_name) in enumerate(zip(
+                    design['action_page'], design['action']
+            )):
+                if primitive_name not in web_primitives.CONCEPTS:
+                    raise ValueError(
+                        f"Invalid primitive: {primitive_name}. Must be one of {web_primitives.CONCEPTS}."
+                    )
+                self._pages[primitive_page_index].add_primitive(
+                    Primitive(primitive_id=i, name=primitive_name))
 
-    Returns:
-      dict: A dictionary representing the design of the website.
-    """
-    design = {
-        'number_of_pages': len(self._pages),
-        'action': [],
-        'action_page': [],
-    }
-    for i, page in enumerate(self._pages):
-      for primitive in page.primitives:
-        design['action'].append(primitive.name)
-        design['action_page'].append(i)
-    return design
+        self._calculate_difficulty()
+
+
+    def _calculate_difficulty(self):
+        """
+        Computes and updates the difficulty of the entire website.
+        """
+        self.difficulty = 0
+        for page in self._pages:
+            self.difficulty += page.calculate_difficulty()
+        return self.difficulty
+
+    def add_page(self, page):
+        """
+        Adds a page to the website.
+
+        Args:
+        page (Page): The page to be added to the website.
+        """
+        self._pages.append(page)
+        self._calculate_difficulty()
+
+    def remove_page(self, page):
+        """
+        Removes a page from the website.
+
+        Args:
+        page (Page): The page to be removed from the website.
+        """
+        self._pages.remove(page)
+        self._calculate_difficulty()
+
+    def convert_to_design(self):
+        """
+        Converts the website structure into a design dictionary format.
+
+        Returns:
+        dict: A dictionary representing the design of the website.
+        """
+        design = {
+            'number_of_pages': len(self._pages),
+            'action': [],
+            'action_page': [],
+        }
+        for i, page in enumerate(self._pages):
+            for primitive in page.primitives:
+                design['action'].append(primitive.name)
+                design['action_page'].append(i)
+        return design
 
 
 def main(_):

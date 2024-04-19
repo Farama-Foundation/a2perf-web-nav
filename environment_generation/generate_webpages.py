@@ -27,7 +27,31 @@ NEXT_PAGE_PRIMITIVE = '#next_page#'
 
 
 def generate_page(page_id):
-  """Generates a single page with primitives. Determines whether to add more pages based on random primitive selection."""
+  """
+  Generates a single page with primitives.
+
+  Determines whether to add more pages based on random primitive selection.
+
+  Args:
+      page_id (str): The ID of the page to generate.
+
+  Returns:
+      Tuple[website_util.Page, bool]: A tuple containing the generated page object
+      and a boolean indicating whether to add more pages after this one.
+
+  Raises:
+      None
+
+  Note:
+      The function uses a loop to randomly select primitives to add to the page.
+      It stops adding primitives when it encounters the "STOP_PRIMITIVE"
+      or "NEXT_PAGE_PRIMITIVE" primitive.
+
+  Example:
+      To generate a page with ID "example_page_id", you can use:
+
+      >>> page, make_next_page = generate_page("example_page_id")
+  """
   page = website_util.Page(page_id)
   make_next_page = False
 
@@ -47,8 +71,28 @@ def generate_page(page_id):
 
 
 def generate_website(seed):
-  """Generates a complete website by adding pages until a stopping condition is met."""
+  """
+  Generates a complete website by adding pages until a stopping condition is met.
 
+  Args:
+      seed (int): The seed value for the random number generator.
+
+  Returns:
+      website_util.Website: The generated website object containing all pages.
+
+  Raises:
+      None
+
+  Note:
+      The function iteratively generates pages using the `generate_page` function
+      until a stopping condition is met. The stopping condition is determined
+      by the `make_next_page` flag returned by the `generate_page` function.
+
+  Example:
+      To generate a website with a given seed value, you can use:
+
+      >>> website = generate_website(123)
+  """
   # We need to seed the random number generator for each process
   np.random.seed(seed)
 
@@ -65,8 +109,29 @@ def generate_website(seed):
 
 
 def main(_):
-  """Main function to orchestrate website generation process."""
+  """
+  Main function to orchestrate website generation process.
 
+  Args:
+      _: Unused. Placeholder for command-line arguments.
+
+  Returns:
+      None
+
+  Raises:
+      None
+
+  Note:
+      This function orchestrates the process of generating multiple websites
+      in parallel. It generates unique seeds for each website, creates output
+      directories as needed, and uses multiprocessing to generate websites
+      concurrently.
+
+  Example:
+      To execute the main function, you can use:
+
+      >>> main()
+  """
   seeds = [_SEED.value + i for i in range(_NUM_WEBSITES.value)]
   os.makedirs(_OUTPUT_DIR.value, exist_ok=True)
 
