@@ -135,6 +135,12 @@ class DistributedVocabulary(Vocabulary):
         size.
     """
     with self.lock:
+      # Now that lock is acquired, it is safe to update the vocabulary.
+      # Other workers may have added words to the vocab, so update the
+      # index accordingly.
+      self._next_index = max(
+        self._local_vocab.values()) + 1 if self._local_vocab else 0
+
       for word in words_to_add:
         if word not in self._local_vocab:
           if len(self._local_vocab) >= self._max_vocabulary_size:
