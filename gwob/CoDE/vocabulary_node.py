@@ -111,6 +111,77 @@ class Vocabulary(object):
     self._local_vocab = self._global_vocab_node.get_global_vocabulary()
 
 
+class UnlockedVocabulary:
+  """A simple and easily serializable vocabulary management class."""
+
+  def __init__(self, max_vocabulary_size=15000):
+    """Initialize the vocabulary with an optional maximum size."""
+    self._max_vocabulary_size = max_vocabulary_size
+    self._vocab = {}
+    self._next_index = 0
+
+  def add_to_vocabulary(self, words_to_add):
+    """Add words to the vocabulary up to the maximum allowed size.
+
+    Args:
+        words_to_add: A list of words to add to the vocabulary.
+
+    Returns:
+        The updated vocabulary dictionary.
+
+    Raises:
+        VocabularyOverflowError: If adding words would exceed the max size.
+    """
+    for word in words_to_add:
+      if word not in self._vocab:
+        if len(self._vocab) >= self._max_vocabulary_size:
+          raise VocabularyOverflowError(
+              f'Vocabulary size exceeded max size of {self._max_vocabulary_size}.')
+        self._vocab[word] = self._next_index
+        self._next_index += 1
+    return self._vocab
+
+  def __getitem__(self, key):
+    """Allows dictionary-style access to the vocabulary."""
+    return self._vocab[key]
+
+  def __len__(self):
+    """Returns the number of items in the vocabulary."""
+    return len(self._vocab)
+
+  def __contains__(self, item):
+    """Check if an item is in the vocabulary."""
+    return item in self._vocab
+
+  def get_vocabulary(self):
+    """Return the entire vocabulary."""
+    return self._vocab
+
+  def save(self):
+    """Save the vocabulary to a form suitable for storage or transfer."""
+    return self._vocab
+
+  @property
+  def max_vocabulary_size(self):
+    return self._max_vocabulary_size
+
+  @property
+  def local_vocab(self):
+    return self._vocab
+
+  @property
+  def global_vocab(self):
+    return self._vocab
+
+  def get_global_vocabulary(self):
+    return self._vocab
+
+  def restore(self, state):
+    """Restore the vocabulary from a saved state."""
+    self._vocab = state
+    self._next_index = max(self._vocab.values()) + 1 if self._vocab else 0
+
+
 class DistributedVocabulary(Vocabulary):
   def __init__(self, max_vocabulary_size=15000):
     self._local_vocab = {}
@@ -139,7 +210,7 @@ class DistributedVocabulary(Vocabulary):
       # Other workers may have added words to the vocab, so update the
       # index accordingly.
       self._next_index = max(
-        self._local_vocab.values()) + 1 if self._local_vocab else 0
+          self._local_vocab.values()) + 1 if self._local_vocab else 0
 
       for word in words_to_add:
         if word not in self._local_vocab:
