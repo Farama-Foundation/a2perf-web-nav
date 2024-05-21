@@ -1,6 +1,3 @@
-"""This file implements the web navigation gym env."""
-
-
 from __future__ import annotations
 
 import json
@@ -20,7 +17,7 @@ from a2perf.domains.web_navigation.gwob.CoDE import web_environment
 class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
   """
   The gym environment for web navigation tasks.
-  
+
   Attributes:
       data_dir (str): Directory path where the data is stored.
       num_websites (int): Number of websites.
@@ -180,39 +177,7 @@ class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
     Returns:
         list: List of website designs.
     """
-    # Load the designs file
-    design_path = os.path.join(self.data_dir, 'difficulty_levels',
-                               f'{difficulty:02d}.json')
-    if not os.path.isfile(design_path):
-      logging.info('Could not find %s', design_path)
-      zip_path = os.path.join(self.data_dir, 'difficulty_levels.zip')
-      if not os.path.isfile(zip_path):
-        raise FileNotFoundError(f'Neither {design_path} nor {zip_path} found.'
-                                f'Please make sure that the a2perf package is'
-                                f'installed correctly.')
-
-      tmp_dir = os.path.join(os.path.expanduser('~'), '.web_navigation')
-      if os.path.isdir(tmp_dir):
-        logging.info('Found existing tmp web_navigation directory %s', tmp_dir)
-        design_path = os.path.join(tmp_dir, 'difficulty_levels',
-                                   f'{difficulty:02d}.json')
-        if os.path.isfile(design_path):
-          logging.info('Found existing design file %s', design_path)
-          with open(design_path, 'r') as f:
-            return json.load(f)
-
-      with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-        # Unzip the files here since we may not have writer permissions
-        os.makedirs(tmp_dir, exist_ok=True)
-        logging.info('Unzipping website design files to %s', tmp_dir)
-        zip_ref.extractall(tmp_dir)
-
-        # After unzipping, the data directory should change
-        self.data_dir = os.path.join(tmp_dir, 'difficulty_levels')
-        design_path = os.path.join(self.data_dir,
-                                   f'{difficulty:02d}.json')
-
-    # load the design path using JSON
+    design_path = os.path.join(self.data_dir, f'{difficulty:02d}.json')
     with open(design_path, 'r') as f:
       return json.load(f)
 

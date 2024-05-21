@@ -669,7 +669,7 @@ def main(_):
                  browser_args=dict(
                      threading=False,
                      chrome_options={
-                         # '--headless',
+                         '--headless=new',
                          '--disable-gpu',
                          '--disable-dev-shm-usage',
                          '--no-sandbox',
