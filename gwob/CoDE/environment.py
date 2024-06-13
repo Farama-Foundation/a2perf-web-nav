@@ -27,7 +27,7 @@ class WebNavigationEnv(web_environment.GMiniWoBWebEnvironment):
       global_vocabulary=None,
       use_legacy_reset: bool = False,
       use_legacy_step: bool = False,
-      render_mode: str = 'image',
+      render_mode: str = 'rgb_array',
       **kwargs,
   ):
     super().__init__(seed=seed, global_vocabulary=global_vocabulary,

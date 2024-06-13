@@ -57,7 +57,7 @@ class EnvironmentTerminateError(Exception):
 @gin.configurable('WebEnvironment')
 class WebEnvironment(gym.Env):
     """Wrapper for WoB environments."""
-    
+
     metadata = {
             "render_modes": ["human", "rgb_array"],
             "name": "WebNavigation-v0",
@@ -884,8 +884,10 @@ class WebEnvironment(gym.Env):
         """Render current observation."""
         screenshot = get_screenshot(
                 self._wob_env.instances[0].driver,
-                self._wob_env.instances[0].task_width,
-                self._wob_env.instances[0].task_height,
+                width=None,
+                height=None,
+                # self._wob_env.instances[0].task_width,
+                # self._wob_env.instances[0].task_height,
         )
         if self._mode == 'test':
             self.screenshots[self.episode_number].append(screenshot)
