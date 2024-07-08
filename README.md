@@ -1,7 +1,16 @@
+# ⚠️ IMPORTANT NOTICE ⚠️
+
+This is a submodule of the A2Perf project. For complete documentation and usage
+instructions, please refer to the main **A2Perf README**.
+
+---
+
 # Environment Generation for Zero-Shot Compositional Reinforcement Learning
 
 ## Overview
-This repository includes the implementation of `Environment Generation for Zero-Shot Compositional Reinforcement Learning by Izzeddin Gur, Natasha Jaques, Yingjie Miao, Jongwook Choi,Manoj Tiwari, Honglak Lee, and Aleksandra Faust. NeurIPS'21`.
+
+This repository includes the implementation
+of `Environment Generation for Zero-Shot Compositional Reinforcement Learning by Izzeddin Gur, Natasha Jaques, Yingjie Miao, Jongwook Choi,Manoj Tiwari, Honglak Lee, and Aleksandra Faust. NeurIPS'21`.
 
 ## Getting Started
 
@@ -12,6 +21,7 @@ svn export https://github.com/google-research/google-research/trunk/compositiona
 ```
 
 ### Install Dependencies
+
 #### Install Bootstrap
 
 * Download bootstrap files:
@@ -58,13 +68,15 @@ python3 integrate_miniwob.py
 pip install gwob/miniwob_plusplus/python/
 ```
 
-* Install the [ChromeDriver](https://chromedriver.chromium.org/downloads) with the version that is matching your Chrome browser:
+* Install the [ChromeDriver](https://chromedriver.chromium.org/downloads) with
+  the version that is matching your Chrome browser:
 
 ```
 export PATH=$PATH:/path/to/chromedriver
 ```
 
 ### Install gMiniWoB
+
 * Install gminiwob:
 
 ```
@@ -75,15 +87,24 @@ pip install gwob/
 
 ### Generating random websites in gMiniWoB
 
-* Open ```file:///path/to/compositional_rl/gwob/gminiwob/sample_random_website.html``` in a browser and click "START".
-* Each time the "START" button is clicked, this will create a random gMiniWoB website using a subset of primitives available in gMiniWoB.
+*
+Open ```file:///path/to/compositional_rl/gwob/gminiwob/sample_random_website.html```
+in a browser and click "START".
+* Each time the "START" button is clicked, this will create a random gMiniWoB
+  website using a subset of primitives available in gMiniWoB.
 
 ### Running a rule-based policy with a fixed test environment
-* Run `python3 gwob/examples/web_environment_example.py --data_dep_path='/path/to/compositional_rl/gwob/` to run a rule-based policy for a simulated shopping website. If you get any errors related to non-headless browsing, make sure to pass `--run_headless_mode=True`.
+
+*
+Run `python3 gwob/examples/web_environment_example.py --data_dep_path='/path/to/compositional_rl/gwob/`
+to run a rule-based policy for a simulated shopping website. If you get any
+errors related to non-headless browsing, make sure to
+pass `--run_headless_mode=True`.
 
 ### Environment design and Q-value network
+
 * The following is a simple tutorial for randomly designing an environment and
-using an LSTM-based DQN to generate logits and values.
+  using an LSTM-based DQN to generate logits and values.
 
 ```
 import gin
